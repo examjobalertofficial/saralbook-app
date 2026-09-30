@@ -27,18 +27,20 @@ jobs:
 
       - name: Configure app
         run: python3 tool/configure_android.py
-      - name: Set Android compileSdk 36
+
+      - name: Force Android compileSdk 36
         run: |
+          echo "Before modification:"
+          grep -R "compileSdk" android || true
+
           python3 - <<'PY'
           from pathlib import Path
           import re
 
-          files = [
-              Path("android/app/build.gradle.kts"),
+          for path in [
               Path("android/app/build.gradle"),
-          ]
-
-          for path in files:
+              Path("android/app/build.gradle.kts"),
+          ]:
               if path.exists():
                   text = path.read_text()
 
@@ -55,12 +57,24 @@ jobs:
                   )
 
                   path.write_text(text)
-                  print(f"Updated compileSdk to 36 in {path}")
+                  print(f"Updated: {path}")
           PY
+
+          echo "After modification:"
+          grep -R "compileSdk" android || true
+
       - run: rm -rf test
+
       - run: flutter pub get
+
       - run: dart run flutter_launcher_icons
+
       - run: dart run flutter_native_splash:create
+
+      - name: Verify Android SDK configuration
+        run: |
+          echo "Checking compileSdk:"
+          grep -R "compileSdk" android || true
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
