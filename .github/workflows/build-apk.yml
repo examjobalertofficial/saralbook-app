@@ -28,53 +28,53 @@ jobs:
       - name: Configure app
         run: python3 tool/configure_android.py
 
-      - name: Force Android compileSdk 36
+      - name: Force compileSdk 36
         run: |
-          echo "Before modification:"
-          grep -R "compileSdk" android || true
-
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
-          for path in [
-              Path("android/app/build.gradle"),
-              Path("android/app/build.gradle.kts"),
-          ]:
-              if path.exists():
-                  text = path.read_text()
+          path = Path("android/app/build.gradle.kts")
 
-                  text = re.sub(
-                      r'compileSdk\s*=\s*\d+',
-                      'compileSdk = 36',
-                      text
-                  )
+          if path.exists():
+              text = path.read_text()
 
-                  text = re.sub(
-                      r'compileSdk\s+\d+',
-                      'compileSdk 36',
-                      text
-                  )
+              text = text.replace(
+                  "compileSdk = flutter.compileSdkVersion",
+                  "compileSdk = 36"
+              )
 
-                  path.write_text(text)
-                  print(f"Updated: {path}")
-          PY
+              text = text.replace(
+                  "compileSdk flutter.compileSdkVersion",
+                  "compileSdk 36"
+              )
 
-          echo "After modification:"
-          grep -R "compileSdk" android || true
+              path.write_text(text)
 
-      - run: rm -rf test
+              print("Final compileSdk configuration:")
+              for line in path.read_text().splitlines():
+                  if "compileSdk" in line:
+                      print(line)
+          else:
+              print("ERROR: android/app/build.gradle.kts not found")
+              raise SystemExit(1)
 
-      - run: flutter pub get
+      - name: Remove test directory
+        run: rm -rf test
 
-      - run: dart run flutter_launcher_icons
+      - name: Get dependencies
+        run: flutter pub get
 
-      - run: dart run flutter_native_splash:create
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons
 
-      - name: Verify Android SDK configuration
+      - name: Generate native splash
+        run: dart run flutter_native_splash:create
+
+      - name: Verify compileSdk
         run: |
-          echo "Checking compileSdk:"
-          grep -R "compileSdk" android || true
+          echo "========== Android compileSdk =========="
+          grep -R "compileSdk" android/app || true
+          echo "========================================"
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
@@ -85,12 +85,14 @@ jobs:
       - name: Build Play Store AAB
         run: flutter build appbundle --release
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: SaralBook-APK
           path: build/app/outputs/flutter-apk/app-release.apk
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
         with:
           name: SaralBook-PlayStore-Bundle
           path: build/app/outputs/bundle/release/app-release.aab
