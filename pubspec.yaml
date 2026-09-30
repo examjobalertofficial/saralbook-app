@@ -1,0 +1,49 @@
+name: app
+description: SaralBook - all SaralBook platforms in one app.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  webview_flutter: ^4.10.0
+  webview_flutter_android: ^4.2.0
+  connectivity_plus: ^6.1.0
+  url_launcher: ^6.3.1
+  share_plus: ^10.1.4
+  package_info_plus: ^8.1.3
+  file_picker: ^8.1.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.1
+  flutter_native_splash: ^2.4.3
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/branding/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/branding/app_icon.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "#1E5AA8"
+  adaptive_icon_foreground: "assets/branding/app_icon_foreground.png"
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  color_dark: "#0F1720"
+  image: assets/branding/logo.png
+  android_12:
+    color: "#FFFFFF"
+    color_dark: "#0F1720"
+    image: assets/branding/app_icon_foreground.png
+    icon_background_color: "#1E5AA8"
+    icon_background_color_dark: "#1E5AA8"
