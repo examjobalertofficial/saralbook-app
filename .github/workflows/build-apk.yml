@@ -1,125 +1,121 @@
 name: Build SaralBook APK
 
 on:
-workflow_dispatch:
-push:
-branches: [main, master]
+  workflow_dispatch:
+  push:
+    branches: [main, master]
 
 jobs:
-build:
-runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest
 
-```
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  - name: Setup Java
-    uses: actions/setup-java@v4
-    with:
-      distribution: temurin
-      java-version: '17'
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-  - name: Setup Flutter
-    uses: subosito/flutter-action@v2
-    with:
-      channel: stable
-      cache: true
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
 
-  - name: Generate Android and iOS project files
-    run: |
-      flutter create \
-        --org com.saralbook \
-        --project-name app \
-        --platforms=android,ios \
-        .
+      - name: Generate Android and iOS project files
+        run: |
+          flutter create \
+            --org com.saralbook \
+            --project-name app \
+            --platforms=android,ios \
+            .
 
-  - name: Configure app
-    run: python3 tool/configure_android.py
+      - name: Configure app
+        run: python3 tool/configure_android.py
 
-  - name: Force compileSdk 36
-    run: |
-      python3 - <<'PY'
-      from pathlib import Path
+      - name: Force compileSdk 36
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
 
-      path = Path("android/app/build.gradle.kts")
+          path = Path("android/app/build.gradle.kts")
 
-      if not path.exists():
-          print("ERROR: android/app/build.gradle.kts not found")
-          raise SystemExit(1)
+          if not path.exists():
+              print("ERROR: android/app/build.gradle.kts not found")
+              raise SystemExit(1)
 
-      text = path.read_text()
+          text = path.read_text()
 
-      text = text.replace(
-          "compileSdk = flutter.compileSdkVersion",
-          "compileSdk = 36"
-      )
+          text = text.replace(
+              "compileSdk = flutter.compileSdkVersion",
+              "compileSdk = 36"
+          )
 
-      text = text.replace(
-          "compileSdk flutter.compileSdkVersion",
-          "compileSdk 36"
-      )
+          text = text.replace(
+              "compileSdk flutter.compileSdkVersion",
+              "compileSdk 36"
+          )
 
-      path.write_text(text)
+          path.write_text(text)
 
-      print("Final compileSdk configuration:")
-      for line in path.read_text().splitlines():
-          if "compileSdk" in line:
-              print(line)
-      PY
+          print("Final compileSdk configuration:")
+          for line in path.read_text().splitlines():
+              if "compileSdk" in line:
+                  print(line)
+          PY
 
-  - name: Remove test directory
-    run: rm -rf test
+      - name: Remove test directory
+        run: rm -rf test
 
-  - name: Get dependencies
-    run: flutter pub get
+      - name: Get dependencies
+        run: flutter pub get
 
-  - name: Clean Flutter build
-    run: flutter clean
+      - name: Clean Flutter build
+        run: flutter clean
 
-  - name: Get dependencies again
-    run: flutter pub get
+      - name: Get dependencies again
+        run: flutter pub get
 
-  - name: Generate launcher icons
-    run: dart run flutter_launcher_icons
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons
 
-  - name: Verify generated launcher icons
-    run: |
-      echo "========== Launcher Icon Files =========="
+      - name: Verify launcher icons
+        run: |
+          echo "========== Launcher Icon Files =========="
+          find android/app/src/main/res -type f \
+            \( -name "ic_launcher*" -o -name "ic_launcher_foreground*" \) \
+            -print
+          echo "========================================="
 
-      find android/app/src/main/res -type f \
-        \( -name "ic_launcher*" -o -name "ic_launcher_foreground*" \) \
-        -print
+      - name: Generate native splash
+        run: dart run flutter_native_splash:create
 
-      echo "========================================="
+      - name: Verify compileSdk
+        run: |
+          echo "========== Android compileSdk =========="
+          grep -R "compileSdk" android/app || true
+          echo "========================================"
 
-  - name: Generate native splash
-    run: dart run flutter_native_splash:create
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
 
-  - name: Verify compileSdk
-    run: |
-      echo "========== Android compileSdk =========="
-      grep -R "compileSdk" android/app || true
-      echo "========================================"
+      - name: Build release APK
+        run: flutter build apk --release
 
-  - name: Analyze
-    run: flutter analyze --no-fatal-infos
+      - name: Build Play Store AAB
+        run: flutter build appbundle --release
 
-  - name: Build release APK
-    run: flutter build apk --release
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SaralBook-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
 
-  - name: Build Play Store AAB
-    run: flutter build appbundle --release
-
-  - name: Upload APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: SaralBook-APK
-      path: build/app/outputs/flutter-apk/app-release.apk
-
-  - name: Upload AAB
-    uses: actions/upload-artifact@v4
-    with:
-      name: SaralBook-PlayStore-Bundle
-      path: build/app/outputs/bundle/release/app-release.aab
-```
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: SaralBook-PlayStore-Bundle
+          path: build/app/outputs/bundle/release/app-release.aab
