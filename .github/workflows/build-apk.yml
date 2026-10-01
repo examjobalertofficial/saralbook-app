@@ -36,33 +36,64 @@ jobs:
       - name: Configure app
         run: python3 tool/configure_android.py
 
-      - name: Force compileSdk 36
+      - name: Configure Android build versions
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          path = Path("android/app/build.gradle.kts")
+          # -------------------------------
+          # Fix Kotlin version
+          # -------------------------------
+          settings = Path("android/settings.gradle.kts")
 
-          if not path.exists():
+          if not settings.exists():
+              print("ERROR: android/settings.gradle.kts not found")
+              raise SystemExit(1)
+
+          text = settings.read_text()
+
+          text = text.replace(
+              'id("org.jetbrains.kotlin.android") version "2.2.20"',
+              'id("org.jetbrains.kotlin.android") version "2.1.20"'
+          )
+
+          text = text.replace(
+              'id("org.jetbrains.kotlin.android") version "2.2.21"',
+              'id("org.jetbrains.kotlin.android") version "2.1.20"'
+          )
+
+          settings.write_text(text)
+
+          print("Kotlin configuration:")
+          for line in text.splitlines():
+              if "kotlin" in line.lower():
+                  print(line)
+
+          # -------------------------------
+          # Force compileSdk 36
+          # -------------------------------
+          app = Path("android/app/build.gradle.kts")
+
+          if not app.exists():
               print("ERROR: android/app/build.gradle.kts not found")
               raise SystemExit(1)
 
-          text = path.read_text()
+          app_text = app.read_text()
 
-          text = text.replace(
+          app_text = app_text.replace(
               "compileSdk = flutter.compileSdkVersion",
               "compileSdk = 36"
           )
 
-          text = text.replace(
+          app_text = app_text.replace(
               "compileSdk flutter.compileSdkVersion",
               "compileSdk 36"
           )
 
-          path.write_text(text)
+          app.write_text(app_text)
 
-          print("Final compileSdk configuration:")
-          for line in path.read_text().splitlines():
+          print("compileSdk configuration:")
+          for line in app_text.splitlines():
               if "compileSdk" in line:
                   print(line)
           PY
@@ -85,9 +116,11 @@ jobs:
       - name: Verify launcher icons
         run: |
           echo "========== Launcher Icon Files =========="
+
           find android/app/src/main/res -type f \
             \( -name "ic_launcher*" -o -name "ic_launcher_foreground*" \) \
             -print
+
           echo "========================================="
 
       - name: Generate native splash
