@@ -33,69 +33,142 @@ jobs:
             --platforms=android,ios \
             .
 
+      - name: Configure Firebase
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
+
+          if [ ! -s android/app/google-services.json ]; then
+            echo "ERROR: google-services.json was not created"
+            exit 1
+          fi
+
+          echo "Firebase configured for com.saralbook.app"
+
+      - name: Configure release signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/saralbook-release.jks
+
+          if [ ! -s android/app/saralbook-release.jks ]; then
+            echo "ERROR: Release keystore was not created"
+            exit 1
+          fi
+
+          cat > android/key.properties <<EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=saralbook-release.jks
+          EOF
+
+          echo "Release keystore installed"
+
       - name: Configure app
         run: python3 tool/configure_android.py
 
-      - name: Configure Android build versions
+      - name: Configure Firebase and signing in Gradle
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          # -------------------------------
-          # Fix Kotlin version
-          # -------------------------------
+          # ---------------------------------
+          # settings.gradle.kts
+          # ---------------------------------
           settings = Path("android/settings.gradle.kts")
-
-          if not settings.exists():
-              print("ERROR: android/settings.gradle.kts not found")
-              raise SystemExit(1)
-
           text = settings.read_text()
 
-          text = text.replace(
-              'id("org.jetbrains.kotlin.android") version "2.2.20"',
-              'id("org.jetbrains.kotlin.android") version "2.1.20"'
-          )
-
-          text = text.replace(
-              'id("org.jetbrains.kotlin.android") version "2.2.21"',
-              'id("org.jetbrains.kotlin.android") version "2.1.20"'
-          )
+          if 'com.google.gms.google-services' not in text:
+              text = text.replace(
+                  'plugins {',
+                  'plugins {\n    id("com.google.gms.google-services") version "4.4.2" apply false',
+                  1
+              )
 
           settings.write_text(text)
 
-          print("Kotlin configuration:")
-          for line in text.splitlines():
-              if "kotlin" in line.lower():
-                  print(line)
-
-          # -------------------------------
-          # Force compileSdk 36
-          # -------------------------------
+          # ---------------------------------
+          # app/build.gradle.kts
+          # ---------------------------------
           app = Path("android/app/build.gradle.kts")
+          text = app.read_text()
 
-          if not app.exists():
-              print("ERROR: android/app/build.gradle.kts not found")
-              raise SystemExit(1)
+          if 'id("com.google.gms.google-services")' not in text:
+              text = text.replace(
+                  'plugins {',
+                  'plugins {\n    id("com.google.gms.google-services")',
+                  1
+              )
 
-          app_text = app.read_text()
+          signing_code = '''
+          import java.util.Properties
+          import java.io.FileInputStream
 
-          app_text = app_text.replace(
-              "compileSdk = flutter.compileSdkVersion",
-              "compileSdk = 36"
+          val keystorePropertiesFile = rootProject.file("key.properties")
+          val keystoreProperties = Properties()
+
+          if (keystorePropertiesFile.exists()) {
+              keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+          }
+
+          android {
+              signingConfigs {
+                  create("release") {
+                      keyAlias = keystoreProperties["keyAlias"] as String?
+                      keyPassword = keystoreProperties["keyPassword"] as String?
+                      storeFile = keystoreProperties["storeFile"]?.let {
+                          rootProject.file("app/$it")
+                      }
+                      storePassword = keystoreProperties["storePassword"] as String?
+                  }
+              }
+          }
+          '''
+
+          marker = 'android {'
+
+          if 'keystorePropertiesFile' not in text:
+              text = text.replace(marker, signing_code + '\n' + marker, 1)
+
+          # Use release signing instead of debug signing
+          text = text.replace(
+              'signingConfig = signingConfigs.getByName("debug")',
+              'signingConfig = signingConfigs.getByName("release")'
           )
 
-          app_text = app_text.replace(
-              "compileSdk flutter.compileSdkVersion",
-              "compileSdk 36"
+          # Force compileSdk 36
+          text = text.replace(
+              'compileSdk = flutter.compileSdkVersion',
+              'compileSdk = 36'
           )
 
-          app.write_text(app_text)
+          text = text.replace(
+              'compileSdk flutter.compileSdkVersion',
+              'compileSdk 36'
+          )
 
-          print("compileSdk configuration:")
-          for line in app_text.splitlines():
-              if "compileSdk" in line:
-                  print(line)
+          # Fix Kotlin version if generated by Flutter
+          settings_text = settings.read_text()
+          settings_text = settings_text.replace(
+              'id("org.jetbrains.kotlin.android") version "2.2.20"',
+              'id("org.jetbrains.kotlin.android") version "2.1.20"'
+          )
+          settings_text = settings_text.replace(
+              'id("org.jetbrains.kotlin.android") version "2.2.21"',
+              'id("org.jetbrains.kotlin.android") version "2.1.20"'
+          )
+          settings.write_text(settings_text)
+
+          app.write_text(text)
+
+          print("Firebase Gradle plugin configured")
+          print("Release signing configured")
+          print("compileSdk configured")
           PY
 
       - name: Remove test directory
@@ -125,6 +198,21 @@ jobs:
 
       - name: Generate native splash
         run: dart run flutter_native_splash:create
+
+      - name: Verify Firebase
+        run: |
+          echo "========== Firebase =========="
+          test -f android/app/google-services.json
+          echo "google-services.json found"
+          echo "=============================="
+
+      - name: Verify signing
+        run: |
+          echo "========== Signing =========="
+          test -f android/app/saralbook-release.jks
+          test -f android/key.properties
+          echo "Release keystore installed"
+          echo "============================="
 
       - name: Verify compileSdk
         run: |
