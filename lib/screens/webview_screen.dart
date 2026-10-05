@@ -8,6 +8,8 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../config/websites.dart';
+import '../core/app_services.dart';
+import '../core/l10n/app_strings.dart';
 import '../utils/navigation.dart';
 import '../widgets/offline_view.dart';
 
@@ -37,6 +39,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
   late final WebViewController _controller;
   StreamSubscription<List<ConnectivityResult>>? _connSub;
+  String? _currentUrl;
   int _progress = 0;
   bool _loading = true;
   bool _hasError = false;
@@ -53,6 +56,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
           onNavigationRequest: _onNavigationRequest,
           onPageStarted: (url) {
             if (!mounted) return;
+            _currentUrl = url;
             setState(() => _loading = true);
           },
           onProgress: (p) {
@@ -67,6 +71,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
             });
           },
           onWebResourceError: _onWebError,
+          onHttpError: _onHttpError,
         ),
       );
 
@@ -127,6 +132,18 @@ class _WebViewScreenState extends State<WebViewScreen> {
       _offline = !online;
       _hasError = online;
     });
+  }
+
+  /// A server error (5xx) on the main page itself -> friendly message.
+  void _onHttpError(HttpResponseError error) {
+    final code = error.response?.statusCode ?? 0;
+    final uri = error.request?.uri.toString();
+    if (code >= 500 && uri != null && uri == _currentUrl && mounted) {
+      setState(() {
+        _loading = false;
+        _hasError = true;
+      });
+    }
   }
 
   Future<NavigationDecision> _onNavigationRequest(NavigationRequest request) async {
@@ -199,17 +216,17 @@ class _WebViewScreenState extends State<WebViewScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(24, 0, 24, 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Switch Website',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  AppStrings.of(context).switchWebsite,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
-            for (final site in Websites.all)
+            for (final site in AppScope.of(context).config.sites)
               ListTile(
                 leading: Icon(site.icon, color: site.color),
                 title: Text(site.name),
@@ -249,13 +266,13 @@ class _WebViewScreenState extends State<WebViewScreen> {
           ),
           actions: [
             IconButton(
-              tooltip: 'Refresh',
+              tooltip: AppStrings.of(context).refresh,
               icon: const Icon(Icons.refresh_rounded),
               onPressed: _refresh,
             ),
             if (widget.showSwitcher)
               IconButton(
-                tooltip: 'Switch Website',
+                tooltip: AppStrings.of(context).switchWebsite,
                 icon: const Icon(Icons.apps_rounded),
                 onPressed: _showSwitcher,
               ),
@@ -285,9 +302,8 @@ class _WebViewScreenState extends State<WebViewScreen> {
                         : OfflineView(
                             onRetry: _load,
                             icon: Icons.error_outline_rounded,
-                            title: 'Unable to load page',
-                            message:
-                                'Something went wrong while loading. Please try again.',
+                            title: AppStrings.of(context).serviceUnavailableTitle,
+                            message: AppStrings.of(context).serviceUnavailableMessage,
                           ),
                   ),
                 ),

@@ -12,6 +12,10 @@ class Website {
   final IconData icon;
   final Color color;
 
+  /// Can be switched off remotely (e.g. while a site is down for repairs).
+  final bool enabled;
+  final String? unavailableMessage;
+
   const Website({
     required this.id,
     required this.name,
@@ -19,7 +23,27 @@ class Website {
     required this.url,
     required this.icon,
     required this.color,
+    this.enabled = true,
+    this.unavailableMessage,
   });
+
+  Website copyWith({
+    String? name,
+    String? description,
+    String? url,
+    bool? enabled,
+    String? unavailableMessage,
+  }) =>
+      Website(
+        id: id,
+        name: name ?? this.name,
+        description: description ?? this.description,
+        url: url ?? this.url,
+        icon: icon,
+        color: color,
+        enabled: enabled ?? this.enabled,
+        unavailableMessage: unavailableMessage ?? this.unavailableMessage,
+      );
 }
 
 class Websites {
@@ -68,6 +92,11 @@ class Websites {
       color: Color(0xFFC2255C),
     ),
   ];
+
+  static List<Website> byIds(List<String> ids) => [
+        for (final id in ids)
+          ...all.where((w) => w.id == id),
+      ];
 
   /// Links to these sites (e.g. social media footers) open in the phone's
   /// own apps/browser instead of inside SaralBook.

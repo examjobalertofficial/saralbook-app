@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/websites.dart';
+import '../core/l10n/app_strings.dart';
 
 class WebsiteCard extends StatelessWidget {
   final Website site;
@@ -74,7 +75,7 @@ class WebsiteCard extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: onOpen,
                     icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                    label: const Text('Open'),
+                    label: Text(AppStrings.of(context).open),
                   ),
                 ),
               ],

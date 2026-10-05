@@ -1,0 +1,19 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+pubspec.lock
+
+# Generated in CI by `flutter create` (see .github/workflows/build-apk.yml)
+/android/
+/ios/
+
+# NEVER commit secrets
+*.jks
+*.keystore
+key.properties
+google-services.json
+GoogleService-Info.plist
+.env

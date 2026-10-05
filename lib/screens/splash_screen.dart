@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../core/l10n/app_strings.dart';
+import '../core/router/app_router.dart';
 import '../widgets/brand_logo.dart';
-import 'main_shell.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -20,13 +22,7 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     _timer = Timer(const Duration(milliseconds: 1400), () {
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder<void>(
-          pageBuilder: (context, animation, secondary) => const MainShell(),
-          transitionsBuilder: (context, animation, secondary, child) =>
-              FadeTransition(opacity: animation, child: child),
-        ),
-      );
+      context.go(AppRoutes.home);
     });
   }
 
@@ -61,7 +57,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 14),
             Text(
-              'Loading...',
+              AppStrings.of(context).loading,
               style: TextStyle(color: scheme.onSurfaceVariant),
             ),
           ],

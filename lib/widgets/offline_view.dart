@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n/app_strings.dart';
+
 class OfflineView extends StatelessWidget {
   final VoidCallback onRetry;
-  final String title;
-  final String message;
+  final String? title;
+  final String? message;
   final IconData icon;
 
   const OfflineView({
     super.key,
     required this.onRetry,
-    this.title = 'No Internet Connection',
-    this.message = 'Please check your internet connection and try again.',
+    this.title,
+    this.message,
     this.icon = Icons.wifi_off_rounded,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final s = AppStrings.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -34,7 +37,7 @@ class OfflineView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              title,
+              title ?? s.noInternetTitle,
               textAlign: TextAlign.center,
               style: Theme.of(context)
                   .textTheme
@@ -43,7 +46,7 @@ class OfflineView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              message,
+              message ?? s.noInternetMessage,
               textAlign: TextAlign.center,
               style: Theme.of(context)
                   .textTheme
@@ -54,7 +57,7 @@ class OfflineView extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try Again'),
+              label: Text(s.tryAgain),
             ),
           ],
         ),

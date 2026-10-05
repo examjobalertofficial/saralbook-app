@@ -1,0 +1,35 @@
+rules_version = '2';
+
+// SaralBook - Firestore security rules (Phase 5: personal data).
+// Rule of thumb: a signed-in person can only touch their own data.
+// Group-expense rules are added together with that feature (Phase 8).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // users/{uid} and everything below it (notes, todos, expenses, ...)
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      // a profile document is small: at most 30 fields
+      allow create, update: if isOwner(uid) && request.resource.data.size() <= 30;
+      allow delete: if isOwner(uid);
+
+      match /{document=**} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && request.resource.data.size() <= 60;
+      }
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// SaralBook - Cloud Storage security rules (Phase 5).
+// Only the owner can use their folder; files are limited to 10 MB and to
+// pictures / PDFs / audio (for receipts, attachments and voice notes).
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function allowedFile() {
+      return request.resource.size < 10 * 1024 * 1024
+          && request.resource.contentType.matches('(image/.*|application/pdf|audio/.*)');
+    }
+
+    match /users/{uid}/{allPaths=**} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid) && allowedFile();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
