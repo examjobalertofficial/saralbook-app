@@ -1,0 +1,49 @@
+name: Apply update zip
+
+# One-time helper: unpacks saralbook-app-phase5.zip (already uploaded in the
+# repository root) into the project, removes the zip files, and saves the result.
+# It does NOT touch .github/workflows, so your working build workflow stays as is.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Unpack the update
+        run: |
+          set -e
+          ZIP="saralbook-app-phase5.zip"
+          test -f "$ZIP" || { echo "ERROR: $ZIP not found in the repository root"; exit 1; }
+          rm -rf /tmp/upd && mkdir /tmp/upd
+          unzip -q "$ZIP" -d /tmp/upd
+          SRC=/tmp/upd/saralbook-app
+          test -f "$SRC/pubspec.yaml" || { echo "ERROR: unexpected zip layout"; exit 1; }
+
+          # replace the code folders completely (removes old, obsolete files)
+          rm -rf lib test docs firebase wordpress
+          cp -r "$SRC/lib" "$SRC/test" "$SRC/docs" "$SRC/firebase" "$SRC/wordpress" .
+          # merge these (keeps anything extra you added)
+          cp -r "$SRC/tool/." tool/
+          cp -r "$SRC/assets/." assets/
+          cp "$SRC/pubspec.yaml" "$SRC/analysis_options.yaml" "$SRC/README.md" "$SRC/.gitignore" .
+
+          rm -f saralbook-app-phase*.zip
+          echo "---- now in the project ----"
+          grep -n "^version" pubspec.yaml
+          ls lib lib/core
+
+      - name: Save the changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Apply SaralBook update (Phase 5 code)"
+          git push
