@@ -1,7 +1,7 @@
 name: Apply update zip
 
-# One-time helper: unpacks saralbook-app-phase5.zip (already uploaded in the
-# repository root) into the project, removes the zip files, and saves the result.
+# Helper: unpacks the NEWEST saralbook-app-phase*.zip found in the repository root
+# into the project, deletes the zip files, and saves the result.
 # It does NOT touch .github/workflows, so your working build workflow stays as is.
 
 on:
@@ -17,11 +17,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Unpack the update
+      - name: Unpack the newest update
         run: |
           set -e
-          ZIP="saralbook-app-phase5.zip"
-          test -f "$ZIP" || { echo "ERROR: $ZIP not found in the repository root"; exit 1; }
+          ZIP=$(ls saralbook-app-phase*.zip 2>/dev/null | sort -V | tail -1)
+          test -n "$ZIP" || { echo "ERROR: no saralbook-app-phase*.zip found in the repository root"; exit 1; }
+          echo "Using $ZIP"
           rm -rf /tmp/upd && mkdir /tmp/upd
           unzip -q "$ZIP" -d /tmp/upd
           SRC=/tmp/upd/saralbook-app
@@ -45,5 +46,5 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           git add -A
-          git commit -m "Apply SaralBook update (Phase 5 code)"
+          git commit -m "Apply SaralBook update"
           git push
