@@ -10,6 +10,8 @@ import 'config/config_controller.dart';
 import 'feed/feed_repository.dart';
 import 'home/home_layout.dart';
 import 'home/recents_controller.dart';
+import 'personal/cloud_collection.dart';
+import 'personal/personal_data.dart';
 import 'settings/settings_controller.dart';
 
 /// Everything the screens share, created once at app start.
@@ -22,6 +24,8 @@ class AppServices {
     required this.layout,
     required this.recents,
     required this.auth,
+    required this.personal,
+    required this.sync,
   });
 
   final SettingsController settings;
@@ -31,6 +35,8 @@ class AppServices {
   final HomeLayoutController layout;
   final RecentsController recents;
   final AuthController auth;
+  final PersonalDataHub personal;
+  final CloudProfileSync sync;
 
   static Future<AppServices> create() async {
     final prefs = await SharedPreferences.getInstance();
@@ -40,7 +46,7 @@ class AppServices {
     final layout = HomeLayoutController.load(prefs);
     final auth = AuthController.firebase();
     // Keeps theme/language/Home layout in the cloud for signed-in people.
-    CloudProfileSync(auth: auth, settings: settings, layout: layout).start();
+    final sync = CloudProfileSync(auth: auth, settings: settings, layout: layout)..start();
     return AppServices(
       settings: settings,
       cache: cache,
@@ -49,6 +55,16 @@ class AppServices {
       layout: layout,
       recents: RecentsController.load(prefs),
       auth: auth,
+      sync: sync,
+      personal: PersonalDataHub(
+        auth,
+        (uid, name) => FirestoreCollection(
+          uid,
+          name,
+          orderBy: name == 'study_sessions' ? 'startedAt' : null,
+          limit: name == 'study_sessions' ? 2000 : null,
+        ),
+      ),
     );
   }
 

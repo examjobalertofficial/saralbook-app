@@ -5,6 +5,7 @@ import '../../core/config/remote_config.dart';
 import '../../core/feed/feed_repository.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../utils/navigation.dart';
+import '../../widgets/favorite_button.dart';
 import '../../widgets/skeleton.dart';
 import 'section_header.dart';
 
@@ -138,7 +139,11 @@ class _FeedCard extends StatelessWidget {
               subtitle: result.items[i].dateLabel.isEmpty
                   ? null
                   : Text(result.items[i].dateLabel),
-              trailing: const Icon(Icons.chevron_right_rounded),
+              trailing: FavoriteButton(
+                title: result.items[i].title,
+                urlOf: () => result.items[i].link,
+                size: 22,
+              ),
               onTap: () => openFeedItem(
                 context,
                 result.items[i].title,

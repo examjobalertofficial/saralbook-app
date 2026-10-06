@@ -11,6 +11,7 @@ import '../config/websites.dart';
 import '../core/app_services.dart';
 import '../core/l10n/app_strings.dart';
 import '../utils/navigation.dart';
+import '../widgets/favorite_button.dart';
 import '../widgets/offline_view.dart';
 
 class WebViewScreen extends StatefulWidget {
@@ -40,6 +41,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
   late final WebViewController _controller;
   StreamSubscription<List<ConnectivityResult>>? _connSub;
   String? _currentUrl;
+  String? _pageTitle;
   int _progress = 0;
   bool _loading = true;
   bool _hasError = false;
@@ -69,6 +71,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
               _loading = false;
               _progress = 100;
             });
+            unawaited(_readTitle());
           },
           onWebResourceError: _onWebError,
           onHttpError: _onHttpError,
@@ -132,6 +135,16 @@ class _WebViewScreenState extends State<WebViewScreen> {
       _offline = !online;
       _hasError = online;
     });
+  }
+
+  /// The page's own title, used when the person bookmarks it.
+  Future<void> _readTitle() async {
+    try {
+      final title = await _controller.getTitle();
+      if (mounted && title != null && title.trim().isNotEmpty) {
+        setState(() => _pageTitle = title.trim());
+      }
+    } catch (_) {/* keep the old title */}
   }
 
   /// A server error (5xx) on the main page itself -> friendly message.
@@ -265,6 +278,10 @@ class _WebViewScreenState extends State<WebViewScreen> {
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           actions: [
+            FavoriteButton(
+              title: _pageTitle ?? widget.title,
+              urlOf: () => _currentUrl ?? widget.url,
+            ),
             IconButton(
               tooltip: AppStrings.of(context).refresh,
               icon: const Icon(Icons.refresh_rounded),

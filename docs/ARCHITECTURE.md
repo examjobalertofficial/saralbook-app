@@ -64,6 +64,32 @@ Rules for later features: personal data lives under `users/{uid}/...` (owner onl
 Anything stored on the phone for one account must use `scopedKey(uid, key)` so a second
 account on the same phone can never see it.
 
+## Phase 6: personal study data
+```
+core/personal/models.dart            Note, Todo, Subject, StudyTask, StudySession, Goal, Exam, Favorite
+core/personal/logic.dart             search, sorting, progress maths, countdown, note-conflict rule (tested)
+core/personal/cloud_collection.dart  CloudCollection interface: Firestore (real) + Memory (tests)
+core/personal/collection_controller.dart  live list for the UI, saves without waiting for the server
+core/personal/personal_data.dart     PersonalData (one account) + PersonalDataHub (swaps on sign-in/out)
+screens/study/                       Notes, To-Do, Planner, Progress, Countdown, Favorites, My data
+widgets/favorite_button.dart         bookmark toggle used across the app
+```
+Firestore paths (all owner-only, see `firebase/firestore.rules`):
+`users/{uid}/notes|todos|subjects|study_tasks|study_sessions|goals|exams|favorites`.
+
+How the rules from the brief are met:
+* **Offline + sync:** Firestore keeps a copy on the phone, shows changes instantly and sends
+  them when the internet returns. Saves never wait for the server.
+* **No duplicates:** ids are made on the phone (unique); a favourite's id comes from its address.
+* **Conflicts:** a note edited on two phones is never silently overwritten: the later save is kept
+  as "(copy)". Other items use last-write-wins (small, simple records).
+* **Account separation:** a new `PersonalData` object (new storage paths) is created for each account;
+  signing out removes it.
+* **Cost:** each signed-in start reads your records once (lists are small). Study sessions are
+  limited to the latest 2000.
+
+Not yet built: reminders (to-do / exam alarms) - they arrive with the notifications phase.
+
 ## Navigation
 Five tabs: Home, Study, Jobs, Tools, More. Bottom bar on phones, side rail on
 tablets (width >= 600 and height >= 480). Web pages open on top of the tabs.

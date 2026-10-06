@@ -5,11 +5,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app/core/app_services.dart';
 import 'package:app/core/auth/auth_controller.dart';
+import 'package:app/core/auth/cloud_sync.dart';
 import 'package:app/core/cache/cache_store.dart';
 import 'package:app/core/config/config_controller.dart';
 import 'package:app/core/feed/feed_repository.dart';
 import 'package:app/core/home/home_layout.dart';
 import 'package:app/core/home/recents_controller.dart';
+import 'package:app/core/personal/cloud_collection.dart';
+import 'package:app/core/personal/personal_data.dart';
 import 'package:app/core/l10n/app_strings.dart';
 import 'package:app/core/settings/settings_controller.dart';
 import 'package:app/screens/account/account_widgets.dart';
@@ -21,14 +24,19 @@ Future<(AppServices, FakeAuthBackend)> _services({bool configured = true}) async
   final prefs = await SharedPreferences.getInstance();
   final cache = CacheStore(prefs);
   final backend = FakeAuthBackend(configured: configured);
+  final auth = AuthController.ready(backend);
+  final settings = await SettingsController.load();
+  final layout = HomeLayoutController.load(prefs);
   final services = AppServices(
-    settings: await SettingsController.load(),
+    settings: settings,
     cache: cache,
     config: ConfigController(cache),
     feeds: FeedRepository(cache),
-    layout: HomeLayoutController.load(prefs),
+    layout: layout,
+    sync: CloudProfileSync(auth: auth, settings: settings, layout: layout), // not started: no Firebase in tests
     recents: RecentsController.load(prefs),
-    auth: AuthController.ready(backend),
+    auth: auth,
+    personal: PersonalDataHub(auth, (uid, name) => MemoryCollection()),
   );
   await services.auth.init();
   return (services, backend);

@@ -44,6 +44,7 @@ class OutputFile {
   String get mimeType {
     final n = name.toLowerCase();
     if (n.endsWith('.pdf')) return 'application/pdf';
+    if (n.endsWith('.json')) return 'application/json';
     if (n.endsWith('.png')) return 'image/png';
     if (n.endsWith('.jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
     return 'application/octet-stream';

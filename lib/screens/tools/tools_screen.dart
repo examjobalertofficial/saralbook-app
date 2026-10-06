@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_services.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/personal/models.dart' show FavoriteKind;
 import '../../core/tools/calc_model.dart';
 import '../../utils/navigation.dart';
 import '../../widgets/coming_soon_card.dart';
+import '../../widgets/favorite_button.dart';
 import '../../widgets/page_body.dart';
 import '../../widgets/website_card.dart';
 import '../home/section_header.dart';
@@ -135,38 +137,53 @@ class _ToolGrid extends StatelessWidget {
                     borderRadius: BorderRadius.circular(18),
                     side: BorderSide(color: scheme.outlineVariant),
                   ),
-                  child: InkWell(
-                    onTap: () => Navigator.of(context, rootNavigator: true).push(
-                      MaterialPageRoute<void>(builder: e.builder),
-                    ),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(minHeight: 76),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: scheme.primaryContainer,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(e.icon, color: scheme.onPrimaryContainer),
+                  child: Stack(
+                    children: [
+                      InkWell(
+                        onTap: () => Navigator.of(context, rootNavigator: true).push(
+                          MaterialPageRoute<void>(builder: e.builder),
+                        ),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 76),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 12, 30, 12),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: scheme.primaryContainer,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(e.icon, color: scheme.onPrimaryContainer),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    e.title.of(lang),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                e.title.of(lang),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: FavoriteButton(
+                          title: e.title.of(lang),
+                          urlOf: () => 'saralbook://tool/${e.id}',
+                          kind: FavoriteKind.tool,
+                          size: 18,
+                          compact: true,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

@@ -66,7 +66,7 @@ class AppRemoteConfig {
     required this.sections,
   });
 
-  static const Set<String> supportedSectionTypes = {'platforms', 'feed', 'recent'};
+  static const Set<String> supportedSectionTypes = {'platforms', 'feed', 'recent', 'favorites'};
 
   static const List<HomeSection> defaultSections = [
     HomeSection(id: 'platforms', type: 'platforms'),
@@ -83,6 +83,12 @@ class AppRemoteConfig {
       title: 'From SaralBook',
       titleHi: 'सरलबुक से',
       feedUrl: Endpoints.saralBookPosts,
+    ),
+    HomeSection(
+      id: 'favorites',
+      type: 'favorites',
+      title: 'Favorites',
+      titleHi: 'पसंदीदा',
     ),
     HomeSection(id: 'recent', type: 'recent'),
   ];

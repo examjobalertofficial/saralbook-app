@@ -10,7 +10,11 @@ import '../core/settings/settings_controller.dart';
 import '../utils/navigation.dart';
 import '../widgets/brand_logo.dart';
 import '../widgets/page_body.dart';
+import '../core/l10n/ltext.dart';
+import '../widgets/tr.dart';
+import 'account/account_data_screen.dart';
 import 'account/account_widgets.dart';
+import 'study/favorites_screen.dart';
 import 'home/customize_screen.dart';
 
 class MoreScreen extends StatelessWidget {
@@ -140,6 +144,20 @@ class MoreScreen extends StatelessWidget {
                 ),
               ),
               subtitle: s.customizeHint,
+            ),
+            tile(
+              Icons.bookmark_border_rounded,
+              tr(context, t('Favorites', 'पसंदीदा')),
+              () => Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute<void>(builder: (_) => const FavoritesScreen()),
+              ),
+            ),
+            tile(
+              Icons.manage_accounts_outlined,
+              tr(context, t('My data (export / delete)', 'मेरा डेटा (एक्सपोर्ट / हटाएं)')),
+              () => Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute<void>(builder: (_) => const AccountDataScreen()),
+              ),
             ),
             tile(
               Icons.cleaning_services_outlined,

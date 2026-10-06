@@ -23,6 +23,7 @@ class CloudProfileSync {
 
   String? _uid;
   bool _applying = false;
+  bool _suspended = false;
   Timer? _debounce;
 
   void start() {
@@ -44,6 +45,7 @@ class CloudProfileSync {
     final uid = user?.uid;
     if (uid == _uid) return;
     _uid = uid;
+    _suspended = false;
     _debounce?.cancel();
     if (user != null) {
       unawaited(_pull(user.uid, user.name, user.email, user.photoUrl));
@@ -81,7 +83,7 @@ class CloudProfileSync {
   }
 
   void _schedulePush() {
-    if (_uid == null || _applying) return;
+    if (_uid == null || _applying || _suspended) return;
     _debounce?.cancel();
     _debounce = Timer(const Duration(seconds: 2), _push);
   }
@@ -95,6 +97,16 @@ class CloudProfileSync {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (_) {/* try again on next change */}
+  }
+
+  /// Part of "Delete my data": removes the profile document and stops
+  /// saving preferences until the next sign-in. Needs the internet.
+  Future<void> deleteProfile() async {
+    final uid = _uid;
+    if (uid == null) return;
+    _debounce?.cancel();
+    _suspended = true;
+    await _doc(uid).delete();
   }
 
   void dispose() {

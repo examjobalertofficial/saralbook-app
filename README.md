@@ -71,6 +71,19 @@ The included GitHub Actions workflow automatically creates the Android and iOS p
 * Security rules for personal data in `firebase/`
 * One-time setup guide: `docs/FIREBASE_SETUP.md` (the app builds fine without it)
 
+## What's new in 1.6.0 (Phase 6: study tools)
+
+Sign in with Google (More tab), then in the **Study** tab:
+
+* **Notes** (search, #tags, saves when you go back, never overwrites a change from another phone)
+* **To-Do** (priority, due date, overdue, swipe to delete with Undo)
+* **Study Planner** (subjects, study tasks, goals) and **Progress** (today / week / month, per subject)
+* **Exam Countdown** (date + time, live countdown)
+* **Favorites**: bookmark any job, article, result, admit card, mock test, store page or tool
+  (bookmark icon in web pages, Home lists and Tools); shown on Home and in Study
+* **My data** (More tab): export a copy, or delete everything (type DELETE to confirm)
+* Everything works offline and syncs when the internet returns; each account has its own data
+
 ## Website URLs
 
 All five website URLs are centralized in:

@@ -1,10 +1,10 @@
 import 'package:go_router/go_router.dart';
 
-import '../../screens/account/account_widgets.dart';
 import '../../screens/home_screen.dart';
 import '../../screens/more_screen.dart';
 import '../../screens/shell/app_shell.dart';
 import '../../screens/splash_screen.dart';
+import '../../screens/study/study_hub_screen.dart';
 import '../../screens/tabs/platform_tab.dart';
 import '../../screens/tools/tools_screen.dart';
 import '../l10n/app_strings.dart';
@@ -40,16 +40,7 @@ GoRouter createRouter() {
           StatefulShellBranch(routes: [
             GoRoute(
               path: AppRoutes.study,
-              builder: (context, state) {
-                final s = AppStrings.of(context);
-                return PlatformTab(
-                  title: s.studyTitle,
-                  subtitle: s.studySubtitle,
-                  siteIds: const ['saralbook', 'saralbooktest', 'saralbookstore'],
-                  comingSoon: s.comingSoonStudy,
-                  extra: const SignInPromptCard(),
-                );
-              },
+              builder: (context, state) => const StudyHubScreen(),
             ),
           ]),
           StatefulShellBranch(routes: [
