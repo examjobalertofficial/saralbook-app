@@ -8,6 +8,7 @@ import '../utils/navigation.dart';
 import '../widgets/brand_logo.dart';
 import '../widgets/page_body.dart';
 import 'home/customize_screen.dart';
+import 'home/expense_section.dart';
 import 'home/favorites_section.dart';
 import 'home/feed_section.dart';
 import 'home/platforms_section.dart';
@@ -90,6 +91,11 @@ class HomeScreen extends StatelessWidget {
                                 key: ValueKey(sec.id),
                                 section: sec,
                                 refreshToken: config.refreshToken,
+                              );
+                            case 'expense':
+                              return ExpenseSection(
+                                key: ValueKey(sec.id),
+                                title: sec.titleFor(lang),
                               );
                             case 'favorites':
                               return FavoritesSection(

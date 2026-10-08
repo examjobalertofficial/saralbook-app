@@ -20,7 +20,7 @@ If you want the plugin on a different site, change `configUrl` in
 | Maintenance | Banner on Home, or full-screen block for emergencies |
 | Announcements | Up to 3 cards at the top of Home, optional link |
 | Websites on/off | A site that is down shows "Service temporarily unavailable" instead of a broken page |
-| Home sections | Order and content of Home: latest-post lists (jobs, admit cards, results, current affairs), platforms, recently viewed |
+| Home sections | Order and content of Home: latest-post lists (jobs, admit cards, results, current affairs), platforms, recently viewed, favorites, expense summary |
 
 Admit Cards / Results / Current Affairs: add a "Latest posts" row and paste
 the category feed address, e.g.

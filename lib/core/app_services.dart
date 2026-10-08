@@ -7,6 +7,7 @@ import 'auth/auth_controller.dart';
 import 'auth/cloud_sync.dart';
 import 'cache/cache_store.dart';
 import 'config/config_controller.dart';
+import 'expense/currency.dart';
 import 'feed/feed_repository.dart';
 import 'home/home_layout.dart';
 import 'home/recents_controller.dart';
@@ -26,6 +27,7 @@ class AppServices {
     required this.auth,
     required this.personal,
     required this.sync,
+    required this.rates,
   });
 
   final SettingsController settings;
@@ -37,6 +39,7 @@ class AppServices {
   final AuthController auth;
   final PersonalDataHub personal;
   final CloudProfileSync sync;
+  final RateService rates;
 
   static Future<AppServices> create() async {
     final prefs = await SharedPreferences.getInstance();
@@ -44,6 +47,7 @@ class AppServices {
     final cache = CacheStore(prefs);
     final config = ConfigController(cache)..loadCached();
     final layout = HomeLayoutController.load(prefs);
+    final rates = RateService(cache: cache, prefs: prefs)..loadCached();
     final auth = AuthController.firebase();
     // Keeps theme/language/Home layout in the cloud for signed-in people.
     final sync = CloudProfileSync(auth: auth, settings: settings, layout: layout)..start();
@@ -56,13 +60,14 @@ class AppServices {
       recents: RecentsController.load(prefs),
       auth: auth,
       sync: sync,
+      rates: rates,
       personal: PersonalDataHub(
         auth,
         (uid, name) => FirestoreCollection(
           uid,
           name,
-          orderBy: name == 'study_sessions' ? 'startedAt' : null,
-          limit: name == 'study_sessions' ? 2000 : null,
+          orderBy: name == 'study_sessions' ? 'startedAt' : (name == 'expenses' ? 'date' : null),
+          limit: name == 'study_sessions' ? 2000 : (name == 'expenses' ? 5000 : null),
         ),
       ),
     );

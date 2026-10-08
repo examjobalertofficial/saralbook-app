@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app/core/auth/auth_backend.dart';
 import 'package:app/core/auth/auth_controller.dart';
+import 'package:app/core/expense/logic.dart';
+import 'package:app/core/expense/models.dart';
+import 'package:app/core/expense/recurring_engine.dart';
 import 'package:app/core/personal/cloud_collection.dart';
 import 'package:app/core/personal/collection_controller.dart';
 import 'package:app/core/personal/models.dart';
@@ -34,6 +37,7 @@ class FailingCollection implements CloudCollection {
 }
 
 void main() {
+  recurringEngineTests();
   group('CollectionController', () {
     test('loads existing rows and ignores damaged ones', () async {
       final mem = MemoryCollection();
@@ -234,6 +238,114 @@ void main() {
       await settle();
       expect(data.favoriteForUrl('https://x.com/p')?.title, 'P');
       hub.dispose();
+    });
+  });
+}
+
+// ---- repeating transactions applied to an account ----
+void recurringEngineTests() {
+  group('recurring engine on account data', () {
+    late Map<String, MemoryCollection> store;
+    CloudCollection make(String uid, String name) => store.putIfAbsent('$uid/$name', MemoryCollection.new);
+    setUp(() => store = {});
+
+    Future<PersonalData> openAccount() async {
+      final backend = FakeAuthBackend();
+      final auth = AuthController.ready(backend);
+      await auth.init();
+      final hub = PersonalDataHub(auth, make);
+      await auth.signIn();
+      await settle();
+      return hub.current!;
+    }
+
+    test('creates due transactions once and remembers progress', () async {
+      final data = await openAccount();
+      final rule = RecurringRule.create(
+        title: 'Rent',
+        type: TxnType.expense,
+        amountMinor: 1000000,
+        categoryId: 'bills',
+        frequency: Frequency.monthly,
+        startDate: DateTime(2026, 8, 5),
+      );
+      data.recurring.upsert(rule);
+      await settle();
+
+      expect(runRecurringNow(data, now: DateTime(2026, 10, 7)), 3);
+      await settle();
+      expect(data.expenses.items.length, 3);
+      expect(data.recurring.items.single.lastGenerated, greaterThan(0));
+
+      // running again, even many times, adds nothing
+      expect(runRecurringNow(data, now: DateTime(2026, 10, 7)), 0);
+      expect(runRecurringNow(data, now: DateTime(2026, 10, 9)), 0);
+      await settle();
+      expect(data.expenses.items.length, 3);
+
+      // deleting one generated transaction does not bring it back
+      data.expenses.remove(data.expenses.items.first.id);
+      await settle();
+      expect(runRecurringNow(data, now: DateTime(2026, 10, 20)), 0);
+      expect(data.expenses.items.length, 2);
+
+      // next month a new one appears
+      expect(runRecurringNow(data, now: DateTime(2026, 11, 6)), 1);
+    });
+
+    test('ensureRecurring runs once per session and only after loading', () async {
+      final data = await openAccount();
+      data.recurring.upsert(RecurringRule.create(
+        title: 'Salary',
+        type: TxnType.income,
+        amountMinor: 5000000,
+        categoryId: 'salary',
+        frequency: Frequency.monthly,
+        startDate: DateTime(2026, 10, 1),
+      ));
+      await settle();
+      expect(ensureRecurring(data, now: DateTime(2026, 10, 7)), 1);
+      expect(data.recurringChecked, isTrue);
+      expect(ensureRecurring(data, now: DateTime(2026, 11, 7)), 0); // already checked this session
+    });
+
+    test('two phones creating the same occurrence do not duplicate it', () async {
+      final data = await openAccount();
+      final rule = RecurringRule.create(
+        title: 'Netflix',
+        type: TxnType.expense,
+        amountMinor: 49900,
+        categoryId: 'entertainment',
+        frequency: Frequency.monthly,
+        startDate: DateTime(2026, 10, 3),
+      );
+      data.recurring.upsert(rule);
+      await settle();
+      // phone A and phone B both plan from the same rule
+      final planA = planRecurring([rule], DateTime(2026, 10, 7)).single;
+      final planB = planRecurring([rule], DateTime(2026, 10, 7)).single;
+      for (final t in [...planA.txns, ...planB.txns]) {
+        data.expenses.upsert(t);
+      }
+      await settle();
+      expect(data.expenses.items.length, 1);
+    });
+
+    test('expenses, budgets and categories are exported and deleted with the account data', () async {
+      final data = await openAccount();
+      data.expenses.upsert(ExpenseTxn.create(type: TxnType.expense, amountMinor: 100, categoryId: 'food', date: DateTime(2026, 10, 1)));
+      data.budgets.upsert(Budget.create(period: BudgetPeriod.monthly, limitMinor: 5000));
+      data.expenseCategories.upsert(CustomCategory.create(name: 'Pets', kind: CategoryKind.expense));
+      await settle();
+      final export = data.exportAll();
+      expect((export['expenses'] as List).length, 1);
+      expect((export['budgets'] as List).length, 1);
+      expect((export['expenseCategories'] as List).length, 1);
+      await data.deleteAll();
+      await settle();
+      expect(data.expenses.items, isEmpty);
+      expect(data.budgets.items, isEmpty);
+      expect(data.expenseCategories.items, isEmpty);
     });
   });
 }

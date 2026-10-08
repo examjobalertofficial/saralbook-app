@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../auth/auth_controller.dart';
+import '../expense/models.dart';
 import 'cloud_collection.dart';
 import 'collection_controller.dart';
 import 'models.dart';
@@ -60,6 +61,30 @@ class PersonalData {
           fromMap: Favorite.fromMap,
           toMap: (n) => n.toMap(),
           idOf: (n) => n.id,
+        ),
+        expenses = CollectionController<ExpenseTxn>(
+          collection: make(uid, 'expenses'),
+          fromMap: ExpenseTxn.fromMap,
+          toMap: (n) => n.toMap(),
+          idOf: (n) => n.id,
+        ),
+        expenseCategories = CollectionController<CustomCategory>(
+          collection: make(uid, 'expense_categories'),
+          fromMap: CustomCategory.fromMap,
+          toMap: (n) => n.toMap(),
+          idOf: (n) => n.id,
+        ),
+        budgets = CollectionController<Budget>(
+          collection: make(uid, 'budgets'),
+          fromMap: Budget.fromMap,
+          toMap: (n) => n.toMap(),
+          idOf: (n) => n.id,
+        ),
+        recurring = CollectionController<RecurringRule>(
+          collection: make(uid, 'recurring'),
+          fromMap: RecurringRule.fromMap,
+          toMap: (n) => n.toMap(),
+          idOf: (n) => n.id,
         ) {
     for (final c in all) {
       c.start();
@@ -75,9 +100,16 @@ class PersonalData {
   final CollectionController<Goal> goals;
   final CollectionController<Exam> exams;
   final CollectionController<Favorite> favorites;
+  final CollectionController<ExpenseTxn> expenses;
+  final CollectionController<CustomCategory> expenseCategories;
+  final CollectionController<Budget> budgets;
+  final CollectionController<RecurringRule> recurring;
 
   List<CollectionController<Object>> get all =>
-      [notes, todos, subjects, studyTasks, sessions, goals, exams, favorites];
+      [notes, todos, subjects, studyTasks, sessions, goals, exams, favorites, expenses, expenseCategories, budgets, recurring];
+
+  /// true once the repeating-transaction check ran for this account in this session
+  bool recurringChecked = false;
 
   bool get hasError => all.any((c) => c.hasError);
 
@@ -99,6 +131,10 @@ class PersonalData {
         'goals': [for (final n in goals.items) {'id': n.id, ...n.toMap()}],
         'exams': [for (final n in exams.items) {'id': n.id, ...n.toMap()}],
         'favorites': [for (final n in favorites.items) {'id': n.id, ...n.toMap()}],
+        'expenses': [for (final n in expenses.items) {'id': n.id, ...n.toMap()}],
+        'expenseCategories': [for (final n in expenseCategories.items) {'id': n.id, ...n.toMap()}],
+        'budgets': [for (final n in budgets.items) {'id': n.id, ...n.toMap()}],
+        'recurringRules': [for (final n in recurring.items) {'id': n.id, ...n.toMap()}],
       };
 
   /// Deletes all cloud data of this account (needs the internet).

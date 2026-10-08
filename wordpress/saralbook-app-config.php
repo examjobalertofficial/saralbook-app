@@ -84,7 +84,7 @@ function saralbook_app_sanitize( $in ) {
 	$out['sections'] = array();
 	for ( $i = 0; $i < 8; $i++ ) {
 		$row  = $in['sections'][ $i ] ?? array();
-		$type = in_array( $row['type'] ?? '', array( 'feed', 'platforms', 'recent', 'favorites' ), true ) ? $row['type'] : 'feed';
+		$type = in_array( $row['type'] ?? '', array( 'feed', 'platforms', 'recent', 'favorites', 'expense' ), true ) ? $row['type'] : 'feed';
 		$out['sections'][ $i ] = array(
 			'type'    => $type,
 			'title'   => sanitize_text_field( $row['title'] ?? '' ),
@@ -162,6 +162,7 @@ function saralbook_app_render_page() {
 							<option value="platforms" <?php selected( $type, 'platforms' ); ?>>Our platforms</option>
 							<option value="recent" <?php selected( $type, 'recent' ); ?>>Recently viewed</option>
 							<option value="favorites" <?php selected( $type, 'favorites' ); ?>>Favorites</option>
+							<option value="expense" <?php selected( $type, 'expense' ); ?>>Expense summary</option>
 						</select>
 					</td>
 					<td><input type="text" name="<?php echo $base; // phpcs:ignore WordPress.Security.EscapeOutput ?>[title]" value="<?php echo esc_attr( $r['title'] ?? '' ); ?>"></td>

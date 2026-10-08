@@ -4,6 +4,7 @@ import '../../core/l10n/ltext.dart';
 import '../../core/tools/calc_model.dart';
 import '../../core/tools/calculators.dart';
 import 'calc_tool_screen.dart';
+import '../expense/currency_screens.dart';
 import 'files/image_screens.dart';
 import 'files/pdf_screens.dart';
 import 'pomodoro_screen.dart';
@@ -25,6 +26,15 @@ final List<ToolEntry> toolCatalog = [
       keywords: c.keywords,
       builder: (context) => CalcToolScreen(tool: c),
     ),
+  ToolEntry(
+    id: 'currency_converter',
+    title: t('Currency Converter', 'मुद्रा कन्वर्टर'),
+    description: t('Live rates, works offline with saved rates', 'लाइव दरें, सेव की गई दरों से ऑफ़लाइन भी चलता है'),
+    icon: Icons.currency_exchange_rounded,
+    category: ToolCategory.examCalc,
+    keywords: const ['currency', 'dollar', 'usd', 'euro', 'exchange', 'rupee', 'forex'],
+    builder: (context) => const CurrencyScreen(),
+  ),
   // ---------------- PDF & image tools (offline) ----------------
   ToolEntry(
     id: 'pdf_viewer',

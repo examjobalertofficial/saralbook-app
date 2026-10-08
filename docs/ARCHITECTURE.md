@@ -90,6 +90,31 @@ How the rules from the brief are met:
 
 Not yet built: reminders (to-do / exam alarms) - they arrive with the notifications phase.
 
+## Phase 7: expense tracker
+```
+core/expense/money.dart            amounts as integer paise, Indian grouping, safe parsing
+core/expense/models.dart           ExpenseTxn, CustomCategory (+ built-in list), Budget, RecurringRule
+core/expense/logic.dart            filters, summaries, reports, budget status/alerts, repeating engine maths
+core/expense/recurring_engine.dart creates due repeating transactions (idempotent)
+core/expense/currency.dart         RateProvider (swap provider here) + RateService (live / saved / manual)
+core/expense/export_table.dart     CSV (formula-safe) + shared table
+core/expense/xlsx_writer.dart      real .xlsx written by hand with `archive` (no extra Excel package)
+core/expense/pdf_report.dart       PDF with Noto Sans fonts (assets/fonts, SIL OFL licence)
+screens/expense/                   tracker, form, reports, budgets, repeating, categories, export, currency
+```
+Firestore: `users/{uid}/expenses | expense_categories | budgets | recurring` (owner-only rules already cover them).
+
+Design notes:
+* **Repeating transactions without a server:** they are created when the app opens. Each occurrence has a fixed id
+  (`rec_<rule>_<yyyymmdd>`) and the rule remembers how far it got, so two phones never duplicate one, and deleting
+  a generated transaction never brings it back. Resuming a paused rule skips what was missed.
+* **Currencies:** every transaction stores the original amount, currency and rate used, plus the rupee amount.
+  Reports and budgets use rupees. Rates: manual > live (cached 12 h) > last saved (up to 30 days).
+  Provider: open.er-api.com (no key); replace `OpenErApiProvider` to change.
+* **Limits:** latest 5000 transactions are loaded; study sessions 2000.
+* **Not yet:** receipt photos / PDFs and OCR (need Firebase Storage), push alerts for budgets and repeating
+  reminders (notifications phase), group expenses (next phases).
+
 ## Navigation
 Five tabs: Home, Study, Jobs, Tools, More. Bottom bar on phones, side rail on
 tablets (width >= 600 and height >= 480). Web pages open on top of the tabs.

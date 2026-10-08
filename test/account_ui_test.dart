@@ -7,6 +7,7 @@ import 'package:app/core/app_services.dart';
 import 'package:app/core/auth/auth_controller.dart';
 import 'package:app/core/auth/cloud_sync.dart';
 import 'package:app/core/cache/cache_store.dart';
+import 'package:app/core/expense/currency.dart';
 import 'package:app/core/config/config_controller.dart';
 import 'package:app/core/feed/feed_repository.dart';
 import 'package:app/core/home/home_layout.dart';
@@ -33,6 +34,7 @@ Future<(AppServices, FakeAuthBackend)> _services({bool configured = true}) async
     config: ConfigController(cache),
     feeds: FeedRepository(cache),
     layout: layout,
+    rates: RateService(cache: cache, prefs: prefs),
     sync: CloudProfileSync(auth: auth, settings: settings, layout: layout), // not started: no Firebase in tests
     recents: RecentsController.load(prefs),
     auth: auth,

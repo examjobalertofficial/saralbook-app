@@ -21,5 +21,8 @@ class Endpoints {
     'onlinecalcy.com',
   ];
 
+  /// Free exchange rates (no key). 1 INR = x of each currency.
+  static const String ratesUrl = 'https://open.er-api.com/v6/latest/INR';
+
   static const Duration requestTimeout = Duration(seconds: 8);
 }

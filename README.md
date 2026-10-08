@@ -84,6 +84,19 @@ Sign in with Google (More tab), then in the **Study** tab:
 * **My data** (More tab): export a copy, or delete everything (type DELETE to confirm)
 * Everything works offline and syncs when the internet returns; each account has its own data
 
+## What's new in 1.7.0 (Phase 7: Expense Tracker)
+
+Sign in, then **More > Expense Tracker** (also a summary block on Home):
+
+* Income and expenses, balance and savings, search and filters (type, category, period)
+* Default + your own categories (Food, Travel, Shopping, Education, Bills, Health, Entertainment, Other...)
+* Budgets: weekly / monthly, overall or per category, warning level, "exceeded" alerts
+* Reports: weekly, monthly or custom range; income vs expense, category breakdown, 6-month trend
+* Repeating transactions (salary, rent, EMI, subscriptions): daily / weekly / monthly / yearly, pause, edit, stop
+* Export to CSV, Excel (.xlsx) or PDF, with filters
+* Other currencies with live rates, saved rates offline, or your own rate; plus a Currency Converter tool
+* Money is stored in paise (no rounding errors); everything works offline and syncs later
+
 ## Website URLs
 
 All five website URLs are centralized in:

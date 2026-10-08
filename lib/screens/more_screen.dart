@@ -14,6 +14,7 @@ import '../core/l10n/ltext.dart';
 import '../widgets/tr.dart';
 import 'account/account_data_screen.dart';
 import 'account/account_widgets.dart';
+import 'expense/expense_home_screen.dart';
 import 'study/favorites_screen.dart';
 import 'home/customize_screen.dart';
 
@@ -144,6 +145,13 @@ class MoreScreen extends StatelessWidget {
                 ),
               ),
               subtitle: s.customizeHint,
+            ),
+            tile(
+              Icons.account_balance_wallet_outlined,
+              tr(context, t('Expense Tracker', 'खर्च ट्रैकर')),
+              () => Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute<void>(builder: (_) => const ExpenseHomeScreen()),
+              ),
             ),
             tile(
               Icons.bookmark_border_rounded,
