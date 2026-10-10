@@ -21,8 +21,6 @@ import '../study/personal_ui.dart';
 import 'group_expense_screen.dart';
 import 'group_ui.dart';
 
-String _lang(BuildContext c) => Localizations.localeOf(c).languageCode;
-
 Future<bool> _confirm(BuildContext context, LText title, LText body, LText action) async {
   final r = await showDialog<bool>(
     context: context,
