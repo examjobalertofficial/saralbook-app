@@ -15,6 +15,7 @@ import 'budgets_screen.dart';
 import 'categories_screen.dart';
 import 'currency_screens.dart';
 import 'expense_ui.dart';
+import '../groups/groups_home_screen.dart';
 import 'export_screen.dart';
 import 'recurring_screen.dart';
 import 'reports_screen.dart';
@@ -233,6 +234,7 @@ class _ExpenseHomeState extends State<_ExpenseHome> {
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
                       children: [
+                        _nav(Icons.groups_2_outlined, t('Groups', 'ग्रुप'), () => _push(context, const GroupsHomeScreen())),
                         _nav(Icons.bar_chart_rounded, t('Reports', 'रिपोर्ट'), () => _push(context, const ReportsScreen())),
                         _nav(Icons.savings_outlined, t('Budgets', 'बजट'), () => _push(context, const BudgetsScreen())),
                         _nav(Icons.repeat_rounded, t('Repeating', 'दोहराव'), () => _push(context, const RecurringScreen())),

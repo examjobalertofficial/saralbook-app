@@ -1,8 +1,8 @@
 rules_version = '2';
 
-// SaralBook - Firestore security rules (Phase 5: personal data).
-// Rule of thumb: a signed-in person can only touch their own data.
-// Group-expense rules are added together with that feature (Phase 8).
+// SaralBook - Firestore security rules (Phase 8: personal data + group expenses).
+// Rule of thumb: a signed-in person can only touch their own data, and a group's
+// data only if they are a member of that group.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -25,6 +25,192 @@ service cloud.firestore {
         allow read, delete: if isOwner(uid);
         allow create, update: if isOwner(uid) && request.resource.data.size() <= 60;
       }
+    }
+
+    // ======================= Group expenses (Phase 8) =======================
+    // expenseGroups/{gid}                  the group (memberIds = who may see it)
+    //   members/{uid}                      role: owner | admin | member
+    //   expenses/{id}, settlements/{id}    the money
+    //   activity/{id}                      history (add only, never changed)
+    // groupInvites/{CODE}                  lets a person with the code find the group
+
+    function groupPath(gid) {
+      return /databases/$(database)/documents/expenseGroups/$(gid);
+    }
+
+    function memberPath(gid, uid) {
+      return /databases/$(database)/documents/expenseGroups/$(gid)/members/$(uid);
+    }
+
+    // member now / member after this write finishes (for batched writes)
+    function isMember(gid) {
+      return signedIn() && request.auth.uid in get(groupPath(gid)).data.memberIds;
+    }
+
+    function isMemberAfter(gid) {
+      return signedIn() && request.auth.uid in getAfter(groupPath(gid)).data.memberIds;
+    }
+
+    function roleOf(gid) {
+      return get(memberPath(gid, request.auth.uid)).data.role;
+    }
+
+    function isAdmin(gid) {
+      return isMember(gid) && roleOf(gid) in ['owner', 'admin'];
+    }
+
+    function groupActive(gid) {
+      return get(groupPath(gid)).data.status == 'active';
+    }
+
+    function validExpense(d) {
+      return d.amountMinor is int && d.amountMinor > 0 && d.amountMinor <= 100000000000
+        && d.title is string && d.title.size() <= 100
+        && d.paidBy is map && d.paidBy.size() >= 1 && d.paidBy.size() <= 100
+        && d.splits is map && d.splits.size() >= 1 && d.splits.size() <= 100
+        && d.splitType in ['equal', 'exact', 'percent']
+        && d.size() <= 25;
+    }
+
+    match /expenseGroups/{gid} {
+      allow read: if signedIn() && request.auth.uid in resource.data.memberIds;
+
+      // a new group: I am the only member and its owner
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.memberIds == [request.auth.uid]
+        && request.resource.data.status == 'active'
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 60
+        && request.resource.data.inviteCode is string && request.resource.data.inviteCode.size() == 8
+        && getAfter(memberPath(gid, request.auth.uid)).data.role == 'owner';
+
+      allow update: if signedIn() && (
+        // owner / admin: change name, look, budget, archive, reset code, remove people
+        (request.auth.uid in resource.data.memberIds
+          && get(memberPath(gid, request.auth.uid)).data.role in ['owner', 'admin']
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['name', 'iconKey', 'colorIndex', 'budgetMinor', 'status', 'inviteCode', 'updatedAt', 'ownerId', 'memberIds'])
+          && request.resource.data.memberIds.toSet().difference(resource.data.memberIds.toSet()).size() == 0
+          && (request.resource.data.ownerId == resource.data.ownerId || resource.data.ownerId == request.auth.uid))
+        // a member leaving
+        || (request.auth.uid in resource.data.memberIds
+          && request.auth.uid != resource.data.ownerId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
+          && request.resource.data.memberIds.toSet() == resource.data.memberIds.toSet().difference([request.auth.uid].toSet()))
+        // joining with the invite code (the member document carries the code as proof)
+        || (!(request.auth.uid in resource.data.memberIds)
+          && resource.data.status == 'active'
+          && resource.data.memberIds.size() < 200
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
+          && request.resource.data.memberIds.toSet() == resource.data.memberIds.toSet().union([request.auth.uid].toSet())
+          && getAfter(memberPath(gid, request.auth.uid)).data.role == 'member'
+          && getAfter(memberPath(gid, request.auth.uid)).data.inviteCode == resource.data.inviteCode)
+      );
+
+      // groups are archived, never deleted (keeps everybody's history safe)
+      allow delete: if false;
+
+      match /members/{mid} {
+        allow read: if isMember(gid);
+
+        allow create: if signedIn() && mid == request.auth.uid
+          && request.resource.data.name is string && request.resource.data.name.size() <= 60
+          && request.resource.data.size() <= 10
+          && (
+            (request.resource.data.role == 'owner'
+              && getAfter(groupPath(gid)).data.ownerId == request.auth.uid
+              && getAfter(groupPath(gid)).data.memberIds == [request.auth.uid])
+            || (request.resource.data.role == 'member'
+              && request.resource.data.inviteCode == get(groupPath(gid)).data.inviteCode
+              && get(groupPath(gid)).data.status == 'active')
+          );
+
+        allow update: if isMember(gid) && (
+          // the owner changes roles (also when handing over ownership)
+          (roleOf(gid) == 'owner'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
+            && request.resource.data.role in ['owner', 'admin', 'member'])
+          // anybody may update their own name / photo, not their role
+          || (mid == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photoUrl']))
+        );
+
+        allow delete: if isMember(gid) && (
+          (mid == request.auth.uid && resource.data.role != 'owner')
+          || (roleOf(gid) == 'owner' && resource.data.role != 'owner')
+          || (roleOf(gid) == 'admin' && resource.data.role == 'member')
+        );
+      }
+
+      match /expenses/{eid} {
+        allow read: if isMember(gid);
+
+        allow create: if isMember(gid) && groupActive(gid)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.version == 1
+          && validExpense(request.resource.data);
+
+        // "version must go up by exactly one": if somebody else saved first,
+        // this write is refused instead of silently overwriting their change
+        allow update: if isMember(gid) && groupActive(gid)
+          && (resource.data.createdBy == request.auth.uid || isAdmin(gid))
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.version == resource.data.version + 1
+          && validExpense(request.resource.data);
+
+        allow delete: if isMember(gid) && groupActive(gid)
+          && (resource.data.createdBy == request.auth.uid || isAdmin(gid));
+      }
+
+      match /settlements/{sid} {
+        allow read: if isMember(gid);
+
+        // the payer notes "I paid" (pending) or the receiver notes "I received" (confirmed)
+        allow create: if isMember(gid) && groupActive(gid)
+          && request.resource.data.amountMinor is int && request.resource.data.amountMinor > 0
+          && request.resource.data.from != request.resource.data.to
+          && request.resource.data.from in get(groupPath(gid)).data.memberIds
+          && request.resource.data.to in get(groupPath(gid)).data.memberIds
+          && request.resource.data.size() <= 10
+          && (
+            (request.resource.data.from == request.auth.uid && request.resource.data.status == 'pending')
+            || (request.resource.data.to == request.auth.uid && request.resource.data.status == 'confirmed')
+          );
+
+        // only the receiver can confirm
+        allow update: if isMember(gid) && groupActive(gid)
+          && resource.data.status == 'pending'
+          && request.resource.data.status == 'confirmed'
+          && resource.data.to == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'confirmedAt']);
+
+        allow delete: if isMember(gid) && groupActive(gid)
+          && ((resource.data.status == 'pending' && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid))
+              || isAdmin(gid));
+      }
+
+      match /activity/{aid} {
+        allow read: if isMember(gid);
+        allow create: if (isMemberAfter(gid) || isMember(gid))
+          && request.resource.data.actorId == request.auth.uid
+          && request.resource.data.type is string
+          && request.resource.data.size() <= 10;
+        allow update, delete: if false;
+      }
+    }
+
+    // A person who knows the code can look up ONE invite (nobody can list them).
+    match /groupInvites/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && code.size() == 8
+        && request.resource.data.keys().hasOnly(['groupId', 'groupName', 'active'])
+        && getAfter(groupPath(request.resource.data.groupId)).data.inviteCode == code
+        && request.auth.uid in getAfter(groupPath(request.resource.data.groupId)).data.memberIds
+        && getAfter(memberPath(request.resource.data.groupId, request.auth.uid)).data.role in ['owner', 'admin'];
+      allow delete: if signedIn() && isAdmin(resource.data.groupId);
+      allow update: if false;
     }
 
     // Everything else is closed.

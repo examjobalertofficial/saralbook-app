@@ -9,6 +9,8 @@ import 'cache/cache_store.dart';
 import 'config/config_controller.dart';
 import 'expense/currency.dart';
 import 'feed/feed_repository.dart';
+import 'groups/group_backend.dart';
+import 'groups/group_controllers.dart';
 import 'home/home_layout.dart';
 import 'home/recents_controller.dart';
 import 'personal/cloud_collection.dart';
@@ -28,6 +30,7 @@ class AppServices {
     required this.personal,
     required this.sync,
     required this.rates,
+    required this.groups,
   });
 
   final SettingsController settings;
@@ -40,6 +43,9 @@ class AppServices {
   final PersonalDataHub personal;
   final CloudProfileSync sync;
   final RateService rates;
+
+  /// Group expenses of the signed-in account (null inside when signed out).
+  final GroupsHub groups;
 
   static Future<AppServices> create() async {
     final prefs = await SharedPreferences.getInstance();
@@ -61,6 +67,7 @@ class AppServices {
       auth: auth,
       sync: sync,
       rates: rates,
+      groups: GroupsHub(auth, FirestoreGroupBackend.new),
       personal: PersonalDataHub(
         auth,
         (uid, name) => FirestoreCollection(

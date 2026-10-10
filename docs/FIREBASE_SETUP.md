@@ -61,6 +61,7 @@ The easiest way (no installs, works in a phone or PC browser) is Google Cloud Sh
    * Start in **production mode** -> Create.
 6. Set the security rules: Firestore -> **Rules** tab -> delete everything -> paste the
    contents of `firebase/firestore.rules` from this repo -> **Publish**.
+   (Phase 8 added rules for group expenses. If you set up earlier, paste and publish the new file again, otherwise groups will show "Could not sync".)
 7. *Storage (photos, PDFs, voice messages) is for a later phase.* Firebase now asks for the
    Blaze (pay-as-you-go) plan to create Storage; it still has a free allowance. Skip it for now.
 8. Download the config: **Project settings > Your apps > SaralBook > google-services.json**
@@ -106,6 +107,7 @@ Making `GOOGLE_SERVICES_JSON_BASE64`:
 | Build says "google-services.json is for ..." | You registered a different package name. It must be `com.saralbook.app`. |
 | Build log: "Firebase/Google sign-in is DISABLED" | `GOOGLE_SERVICES_JSON_BASE64` secret is missing or misspelled. |
 | App from Play Store cannot sign in, but your APK can | Play re-signs apps. Play Console > Setup > App signing > copy that **SHA-1/SHA-256** into Firebase too. |
+| Red banner "Could not sync with the cloud" | Tap it (or More > Cloud sync check). It tests each step and says what to fix. Most often: publish the rules from `firebase/firestore.rules` (Firestore Database > Rules > Publish), or create the Firestore database. |
 | "Sign-in is not available in this version" shows | The build had no Firebase file (see above). |
 
 ## What gets stored where

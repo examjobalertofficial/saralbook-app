@@ -13,8 +13,10 @@ import '../widgets/page_body.dart';
 import '../core/l10n/ltext.dart';
 import '../widgets/tr.dart';
 import 'account/account_data_screen.dart';
+import 'account/cloud_check_screen.dart';
 import 'account/account_widgets.dart';
 import 'expense/expense_home_screen.dart';
+import 'groups/groups_home_screen.dart';
 import 'study/favorites_screen.dart';
 import 'home/customize_screen.dart';
 
@@ -154,6 +156,14 @@ class MoreScreen extends StatelessWidget {
               ),
             ),
             tile(
+              Icons.groups_2_outlined,
+              tr(context, t('Group Expenses', 'ग्रुप खर्च')),
+              () => Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute<void>(builder: (_) => const GroupsHomeScreen()),
+              ),
+              subtitle: tr(context, t('Split bills with friends', 'दोस्तों के साथ बिल बांटें')),
+            ),
+            tile(
               Icons.bookmark_border_rounded,
               tr(context, t('Favorites', 'पसंदीदा')),
               () => Navigator.of(context, rootNavigator: true).push(
@@ -166,6 +176,14 @@ class MoreScreen extends StatelessWidget {
               () => Navigator.of(context, rootNavigator: true).push(
                 MaterialPageRoute<void>(builder: (_) => const AccountDataScreen()),
               ),
+            ),
+            tile(
+              Icons.cloud_sync_outlined,
+              tr(context, t('Cloud sync check', 'क्लाउड सिंक जांच')),
+              () => Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute<void>(builder: (_) => const CloudCheckScreen()),
+              ),
+              subtitle: tr(context, t('Test your connection to the cloud', 'क्लाउड से कनेक्शन टेस्ट करें')),
             ),
             tile(
               Icons.cleaning_services_outlined,

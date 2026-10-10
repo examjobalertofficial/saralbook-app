@@ -7,6 +7,7 @@ import 'calc_tool_screen.dart';
 import '../expense/currency_screens.dart';
 import 'files/image_screens.dart';
 import 'files/pdf_screens.dart';
+import '../resume/resume_maker_screen.dart';
 import 'pomodoro_screen.dart';
 import 'stopwatch_screen.dart';
 import 'tool_entry.dart';
@@ -34,6 +35,15 @@ final List<ToolEntry> toolCatalog = [
     category: ToolCategory.examCalc,
     keywords: const ['currency', 'dollar', 'usd', 'euro', 'exchange', 'rupee', 'forex'],
     builder: (context) => const CurrencyScreen(),
+  ),
+  ToolEntry(
+    id: 'resume_maker',
+    title: t('Resume Maker', 'रिज़्यूमे मेकर'),
+    description: t('Make a neat resume PDF from 5 templates', '5 टेम्पलेट से सुंदर रिज़्यूमे PDF बनाएं'),
+    icon: Icons.description_outlined,
+    category: ToolCategory.student,
+    keywords: const ['resume', 'cv', 'biodata', 'job', 'bio data', 'curriculum'],
+    builder: (context) => const ResumeMakerScreen(),
   ),
   // ---------------- PDF & image tools (offline) ----------------
   ToolEntry(

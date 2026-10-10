@@ -12,6 +12,8 @@ import 'package:app/core/config/config_controller.dart';
 import 'package:app/core/feed/feed_repository.dart';
 import 'package:app/core/home/home_layout.dart';
 import 'package:app/core/home/recents_controller.dart';
+import 'package:app/core/groups/group_backend.dart';
+import 'package:app/core/groups/group_controllers.dart';
 import 'package:app/core/personal/cloud_collection.dart';
 import 'package:app/core/personal/personal_data.dart';
 import 'package:app/core/l10n/app_strings.dart';
@@ -39,6 +41,7 @@ Future<(AppServices, FakeAuthBackend)> _services({bool configured = true}) async
     recents: RecentsController.load(prefs),
     auth: auth,
     personal: PersonalDataHub(auth, (uid, name) => MemoryCollection()),
+    groups: GroupsHub(auth, MemoryGroupBackend.new),
   );
   await services.auth.init();
   return (services, backend);

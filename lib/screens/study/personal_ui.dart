@@ -10,6 +10,7 @@ import '../../core/tools/calc_math.dart';
 import '../../widgets/page_body.dart';
 import '../../widgets/tr.dart';
 import '../account/account_widgets.dart';
+import '../account/cloud_check_screen.dart';
 
 /// Colours people can give their subjects (stored as an index).
 const List<Color> subjectColors = [
@@ -150,25 +151,36 @@ class SyncProblemBanner extends StatelessWidget {
   const SyncProblemBanner({super.key, required this.visible});
 
   static final LText _text = t(
-    'Could not sync with the cloud. Check your internet connection.',
-    'क्लाउड से सिंक नहीं हो सका। अपना इंटरनेट कनेक्शन जांचें।',
+    'Could not sync with the cloud. Tap here to find out why.',
+    'क्लाउड से सिंक नहीं हो सका। कारण जानने के लिए यहां दबाएं।',
   );
 
   @override
   Widget build(BuildContext context) {
     if (!visible) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: scheme.errorContainer, borderRadius: BorderRadius.circular(12)),
-      child: Row(
-        children: [
-          Icon(Icons.cloud_off_rounded, color: scheme.onErrorContainer, size: 20),
-          const SizedBox(width: 10),
-          Expanded(child: Text(tr(context, _text), style: TextStyle(color: scheme.onErrorContainer))),
-        ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Material(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute<void>(builder: (_) => const CloudCheckScreen()),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Icon(Icons.cloud_off_rounded, color: scheme.onErrorContainer, size: 20),
+                const SizedBox(width: 10),
+                Expanded(child: Text(tr(context, _text), style: TextStyle(color: scheme.onErrorContainer))),
+                Icon(Icons.chevron_right_rounded, color: scheme.onErrorContainer),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

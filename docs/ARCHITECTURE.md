@@ -128,18 +128,27 @@ tablets (width >= 600 and height >= 480). Web pages open on top of the tabs.
 ```
 users/{uid}                      profile, prefs, homeLayout, fcmTokens
 users/{uid}/notes | todos | plans | favorites | expenses | budgets | recurring | countdowns
-groups/{gid}                     name, icon, color, ownerId, adminIds[], memberIds[],
-                                 baseCurrency, status (active|archived), inviteCode
-groups/{gid}/members/{uid}       role, permissions{}, joinedAt, lastSeen
-groups/{gid}/expenses/{eid}      amount, currency, rate, payerId, splits{uid: amount}, version
-groups/{gid}/settlements/{sid}   from, to, amount, status (pending|paid|confirmed)
-groups/{gid}/messages/{mid}      text/attachment, replyTo, reactions, readBy
-groups/{gid}/activity/{aid}      append-only audit log (rules forbid update/delete)
-groups/{gid}/budgets | recurring
-invites/{code}                   -> gid
+expenseGroups/{gid}              name, iconKey, colorIndex, baseCurrency (INR), ownerId, memberIds[],
+                                 inviteCode, status (active|archived), budgetMinor (monthly)
+expenseGroups/{gid}/members/{uid}   role (owner|admin|member), name, photoUrl, inviteCode (join proof)
+expenseGroups/{gid}/expenses/{eid}  amountMinor (paise), currency/origMinor/rate, paidBy{uid: paise},
+                                 splits{uid: paise}, splitType (equal|exact|percent), version
+expenseGroups/{gid}/settlements/{sid}  from, to, amountMinor, status (pending|confirmed)
+expenseGroups/{gid}/activity/{aid}  append-only history (rules forbid update/delete)
+groupInvites/{CODE}              groupId, groupName, active  (get only, never listed)
 ```
 Security rules: personal data only when `request.auth.uid == uid`; group data
 only when `request.auth.uid in group.memberIds`; activity is create-only.
+Groups are archived, never deleted. Chat, push notifications, attachments/OCR and
+recurring group bills are planned for Phase 9.
+
+## Group expenses (Phase 8)
+`core/groups/group_logic.dart` is pure maths (equal / exact / percentage splits in
+paise, balances, simplified settle-up, budget). `group_backend.dart` talks to
+Firestore (or memory in tests). `group_controllers.dart` has `GroupsController`
+(list, create, join by code), `GroupSession` (one open group) and `GroupsHub`
+(one controller per signed-in account). Edits carry `version`; the rules accept only
+`old + 1`, so two people editing at once cannot overwrite each other silently.
 Storage: `users/{uid}/...` and `groups/{gid}/...`, 10 MB cap, content-type checks.
 
 ## Release signing (GitHub secrets)
