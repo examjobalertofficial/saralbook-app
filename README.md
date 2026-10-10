@@ -142,3 +142,8 @@ Play Store bundle:
 - **Resume Maker** (Tools > Student): 5 templates, colour and photo, education / experience /
   skills / personal details / declaration, Hindi text, PDF to share or save. Saved only on the phone.
 - **Publish the new Firestore rules** (firebase/firestore.rules) - see docs/FIREBASE_SETUP.md.
+
+## What's new in 1.9.0 (Phase 9: Group chat)
+- New **Chat** tab inside every group: text messages, reply, copy, delete (your own; admins can delete any), unread badge.
+- Chat is read-only in archived groups.
+- **Publish the updated Firestore rules again** (firebase/firestore.rules) - chat needs them.

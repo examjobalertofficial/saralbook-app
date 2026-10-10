@@ -72,18 +72,30 @@ class GroupDetailScreen extends StatefulWidget {
   State<GroupDetailScreen> createState() => _GroupDetailScreenState();
 }
 
-class _GroupDetailScreenState extends State<GroupDetailScreen> {
+class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTickerProviderStateMixin {
   late final GroupSession _session = GroupSession(groups: widget.groups, gid: widget.gid);
+  late final TabController _tabs = TabController(length: 5, vsync: this);
+  static const int _chatTab = 4;
 
   static final LText _tabExpenses = t('Expenses', 'खर्च');
   static final LText _tabBalances = t('Balances', 'हिसाब');
   static final LText _tabMembers = t('Members', 'सदस्य');
   static final LText _tabActivity = t('Activity', 'गतिविधि');
+  static final LText _tabChat = t('Chat', 'चैट');
   static final LText _add = t('Add expense', 'खर्च जोड़ें');
   static final LText _gone = t('You are no longer in this group.', 'आप अब इस ग्रुप में नहीं हैं।');
 
   @override
+  void initState() {
+    super.initState();
+    _tabs.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
   void dispose() {
+    _tabs.dispose();
     _session.dispose();
     super.dispose();
   }
@@ -106,9 +118,11 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
             body: EmptyState(icon: Icons.group_off_outlined, message: _gone),
           );
         }
-        return DefaultTabController(
-          length: 4,
-          child: Scaffold(
+        if (_tabs.index == _chatTab) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _session.markChatRead());
+        }
+        final unread = _session.unreadCount;
+        return Scaffold(
             appBar: AppBar(
               title: Row(
                 children: [
@@ -119,6 +133,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
               ),
               actions: [_menu(g)],
               bottom: TabBar(
+                controller: _tabs,
                 isScrollable: true,
                 tabAlignment: TabAlignment.start,
                 tabs: [
@@ -126,10 +141,17 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                   Tab(text: tr(context, _tabBalances)),
                   Tab(text: tr(context, _tabMembers)),
                   Tab(text: tr(context, _tabActivity)),
+                  Tab(
+                    child: Badge(
+                      isLabelVisible: unread > 0 && _tabs.index != _chatTab,
+                      label: Text('$unread'),
+                      child: Padding(padding: const EdgeInsets.only(right: 8), child: Text(tr(context, _tabChat))),
+                    ),
+                  ),
                 ],
               ),
             ),
-            floatingActionButton: g.archived || !_session.loaded
+            floatingActionButton: g.archived || !_session.loaded || _tabs.index == _chatTab
                 ? null
                 : FloatingActionButton.extended(
                     onPressed: () => _openExpenseForm(),
@@ -146,18 +168,19 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                     child: !_session.loaded
                         ? const Center(child: CircularProgressIndicator())
                         : TabBarView(
+                            controller: _tabs,
                             children: [
                               _ExpensesTab(session: _session, onOpen: _showExpense),
                               _BalancesTab(session: _session),
                               _MembersTab(session: _session, onLeft: () => Navigator.of(context).pop()),
                               _ActivityTab(session: _session),
+                              _ChatTab(session: _session),
                             ],
                           ),
                   ),
                 ],
               ),
             ),
-          ),
         );
       },
     );
@@ -941,6 +964,183 @@ class _ActivityTab extends StatelessWidget {
           subtitle: Text('${fmtDate(when)}  ${fmtTime(when)}'),
         );
       },
+    );
+  }
+}
+
+// ======================= chat tab =======================
+
+class _ChatTab extends StatefulWidget {
+  final GroupSession session;
+  const _ChatTab({required this.session});
+
+  @override
+  State<_ChatTab> createState() => _ChatTabState();
+}
+
+class _ChatTabState extends State<_ChatTab> {
+  final TextEditingController _input = TextEditingController();
+  GroupMessage? _replyTo;
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
+
+  void _send() {
+    if (widget.session.sendMessage(_input.text, replyTo: _replyTo)) {
+      _input.clear();
+      setState(() => _replyTo = null);
+    }
+  }
+
+  void _actions(GroupMessage m) {
+    final s = widget.session;
+    if (m.deleted) return;
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!s.isArchived)
+              ListTile(
+                leading: const Icon(Icons.reply_rounded),
+                title: Text(tr(ctx, t('Reply', 'जवाब दें'))),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  setState(() => _replyTo = m);
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.copy_rounded),
+              title: Text(tr(ctx, t('Copy', 'कॉपी करें'))),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                Clipboard.setData(ClipboardData(text: m.text));
+              },
+            ),
+            if (!s.isArchived && (m.senderId == s.me.uid || s.iAmAdmin))
+              ListTile(
+                leading: Icon(Icons.delete_outline_rounded, color: Theme.of(ctx).colorScheme.error),
+                title: Text(tr(ctx, t('Delete message', 'संदेश हटाएं'))),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  s.deleteMessage(m);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.session;
+    final scheme = Theme.of(context).colorScheme;
+    final list = s.messages.reversed.toList();
+    return Column(
+      children: [
+        Expanded(
+          child: list.isEmpty
+              ? EmptyState(icon: Icons.chat_bubble_outline_rounded, message: t('No messages yet. Say hello to the group!', 'अभी कोई संदेश नहीं। ग्रुप को नमस्ते कहें!'))
+              : ListView.builder(
+                  reverse: true,
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                  itemCount: list.length,
+                  itemBuilder: (context, i) {
+                    final m = list[i];
+                    final mine = m.senderId == s.me.uid;
+                    final when = DateTime.fromMillisecondsSinceEpoch(m.createdAt);
+                    return Align(
+                      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                      child: GestureDetector(
+                        onLongPress: () => _actions(m),
+                        child: Container(
+                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
+                          margin: const EdgeInsets.symmetric(vertical: 3),
+                          padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+                          decoration: BoxDecoration(
+                            color: mine ? scheme.primaryContainer : scheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (!mine)
+                                Text(s.nameOf(m.senderId), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: scheme.primary)),
+                              if (m.replyPreview.isNotEmpty)
+                                Container(
+                                  margin: const EdgeInsets.only(top: 2, bottom: 4),
+                                  padding: const EdgeInsets.only(left: 8),
+                                  decoration: BoxDecoration(border: Border(left: BorderSide(color: scheme.primary, width: 3))),
+                                  child: Text(m.replyPreview, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
+                                ),
+                              m.deleted
+                                  ? Text(tr(context, t('This message was deleted', 'यह संदेश हटा दिया गया')), style: TextStyle(fontStyle: FontStyle.italic, color: scheme.onSurfaceVariant))
+                                  : SelectableText(m.text),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(fmtTime(when), style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        if (s.isArchived)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(tr(context, t('Chat is closed because the group is archived.', 'ग्रुप आर्काइव होने से चैट बंद है।')), style: TextStyle(color: scheme.onSurfaceVariant)),
+          )
+        else ...[
+          if (_replyTo != null)
+            Container(
+              color: scheme.surfaceContainerHighest,
+              padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+              child: Row(
+                children: [
+                  Expanded(child: Text('${tr(context, t('Replying to', 'जवाब'))}: ${_replyTo!.text}', maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => setState(() => _replyTo = null)),
+                ],
+              ),
+            ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 8, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _input,
+                      minLines: 1,
+                      maxLines: 4,
+                      maxLength: 1000,
+                      buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        hintText: tr(context, t('Message', 'संदेश')),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton.filled(onPressed: _send, icon: const Icon(Icons.send_rounded)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

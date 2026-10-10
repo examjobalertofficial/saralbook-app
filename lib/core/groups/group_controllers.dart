@@ -177,6 +177,7 @@ class GroupSession extends ChangeNotifier {
     _subs.add(b.watchExpenses(gid).listen(_onExpenses, onError: _onReadError));
     _subs.add(b.watchSettlements(gid).listen(_onSettlements, onError: _onReadError));
     _subs.add(b.watchActivity(gid).listen(_onActivity, onError: _onReadError));
+    _subs.add(b.watchMessages(gid).listen(_onMessages, onError: _onReadError));
   }
 
   final GroupsController groups;
@@ -187,6 +188,8 @@ class GroupSession extends ChangeNotifier {
   List<GroupExpense> _expenses = const [];
   List<GroupSettlement> _settlements = const [];
   List<GroupActivity> _activity = const [];
+  List<GroupMessage> _messages = const [];
+  int _markedAt = 0;
   bool _membersLoaded = false;
   bool _expensesLoaded = false;
   bool _readFailed = false;
@@ -199,6 +202,16 @@ class GroupSession extends ChangeNotifier {
   List<GroupExpense> get expenses => _expenses;
   List<GroupSettlement> get settlements => _settlements;
   List<GroupActivity> get activity => _activity;
+
+  /// Chat, oldest first.
+  List<GroupMessage> get messages => _messages;
+
+  /// Messages from other people that this person has not seen yet.
+  int get unreadCount {
+    final since = memberById(me.uid)?.lastReadAt ?? 0;
+    final floor = since > _markedAt ? since : _markedAt;
+    return _messages.where((m) => !m.deleted && m.senderId != me.uid && m.createdAt > floor).length;
+  }
   bool get loaded => _membersLoaded && _expensesLoaded;
   bool get hasError => _readFailed || _writeFailed || groups.hasError;
   bool get writeFailed => _writeFailed;
@@ -294,6 +307,14 @@ class GroupSession extends ChangeNotifier {
       for (final r in rows)
         if (GroupActivity.fromMap(r) case final GroupActivity a) a,
     ]..sort((a, b) => b.at.compareTo(a.at));
+    _notify();
+  }
+
+  void _onMessages(List<Json> rows) {
+    _messages = [
+      for (final r in rows)
+        if (GroupMessage.fromMap(r) case final GroupMessage m) m,
+    ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     _notify();
   }
 
@@ -417,6 +438,38 @@ class GroupSession extends ChangeNotifier {
     if (s.from != me.uid && s.to != me.uid && !iAmAdmin) return false;
     _run(groups.backend.deleteSettlement(gid, s.id, _act('settlement_cancelled', subject: nameOf(s.to), amount: s.amountMinor)));
     return true;
+  }
+
+  /// Sends a chat message (not in archived groups). [replyTo] quotes another message.
+  bool sendMessage(String text, {GroupMessage? replyTo}) {
+    final clean = text.trim();
+    if (isArchived || clean.isEmpty) return false;
+    final m = GroupMessage.create(
+      senderId: me.uid,
+      senderName: nameOf(me.uid),
+      text: clean,
+      replyToId: replyTo?.id ?? '',
+      replyPreview: replyTo == null ? '' : (replyTo.deleted ? '' : replyTo.text),
+    );
+    _messages = [..._messages, m];
+    _notify();
+    _run(groups.backend.sendMessage(gid, m));
+    return true;
+  }
+
+  bool deleteMessage(GroupMessage m) {
+    if (isArchived || m.deleted || (m.senderId != me.uid && !iAmAdmin)) return false;
+    _run(groups.backend.deleteMessage(gid, m.id));
+    return true;
+  }
+
+  /// Call while the chat is on screen.
+  void markChatRead() {
+    if (unreadCount == 0) return;
+    final now = nowMs();
+    _markedAt = now;
+    _notify();
+    _run(groups.backend.markRead(gid, me.uid, now));
   }
 
   bool rename(String name) {

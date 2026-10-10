@@ -134,13 +134,14 @@ expenseGroups/{gid}/members/{uid}   role (owner|admin|member), name, photoUrl, i
 expenseGroups/{gid}/expenses/{eid}  amountMinor (paise), currency/origMinor/rate, paidBy{uid: paise},
                                  splits{uid: paise}, splitType (equal|exact|percent), version
 expenseGroups/{gid}/settlements/{sid}  from, to, amountMinor, status (pending|confirmed)
+expenseGroups/{gid}/messages/{mid}  chat: senderId, text, replyToId/replyPreview, createdAt, deleted (soft)
 expenseGroups/{gid}/activity/{aid}  append-only history (rules forbid update/delete)
 groupInvites/{CODE}              groupId, groupName, active  (get only, never listed)
 ```
 Security rules: personal data only when `request.auth.uid == uid`; group data
 only when `request.auth.uid in group.memberIds`; activity is create-only.
-Groups are archived, never deleted. Chat, push notifications, attachments/OCR and
-recurring group bills are planned for Phase 9.
+Groups are archived, never deleted. Push notifications (need Cloud Functions = paid plan), attachments/OCR and
+recurring group bills are not built yet.
 
 ## Group expenses (Phase 8)
 `core/groups/group_logic.dart` is pure maths (equal / exact / percentage splits in

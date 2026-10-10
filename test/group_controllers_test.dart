@@ -205,4 +205,52 @@ void main() {
     expect(first.active.length, 1);
     hub.dispose();
   });
+
+  test('group chat: send, reply, delete, unread count', () async {
+    final asha = controllerFor(_a, cloud);
+    final g = asha.createGroup(name: 'Chat');
+    final bala = controllerFor(_b, cloud);
+    await settle();
+    await bala.join(g.inviteCode);
+    await settle();
+    final sa = GroupSession(groups: asha, gid: g.id);
+    final sb = GroupSession(groups: bala, gid: g.id);
+    await settle();
+
+    expect(sa.sendMessage('   '), isFalse);
+    expect(sa.sendMessage('Hello everyone'), isTrue);
+    await settle();
+    expect(sb.messages.single.text, 'Hello everyone');
+    expect(sb.unreadCount, 1);
+    expect(sa.unreadCount, 0, reason: 'own messages are never unread');
+
+    sb.markChatRead();
+    await settle();
+    expect(sb.unreadCount, 0);
+    expect(sb.memberById('b')!.lastReadAt, greaterThan(0));
+
+    expect(sb.sendMessage('Hi!', replyTo: sb.messages.firstWhere((m) => m.text == 'Hello everyone')), isTrue);
+    await settle();
+    expect(sa.messages.firstWhere((m) => m.text == 'Hi!').replyPreview, 'Hello everyone');
+    expect(sa.unreadCount, 1);
+
+    // only the sender or an admin may delete
+    final first = sb.messages.firstWhere((m) => m.senderId == 'a'); // Asha's message
+    expect(sb.deleteMessage(first), isFalse);
+    expect(sa.deleteMessage(first), isTrue);
+    await settle();
+    final gone = sb.messages.firstWhere((m) => m.id == first.id);
+    expect(gone.deleted, isTrue);
+    expect(gone.text, '');
+
+    // archived groups are read-only
+    sa.setArchived(true);
+    await settle();
+    expect(sa.sendMessage('late'), isFalse);
+
+    sa.dispose();
+    sb.dispose();
+    asha.dispose();
+    bala.dispose();
+  });
 }

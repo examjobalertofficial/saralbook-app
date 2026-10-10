@@ -31,6 +31,7 @@ service cloud.firestore {
     // expenseGroups/{gid}                  the group (memberIds = who may see it)
     //   members/{uid}                      role: owner | admin | member
     //   expenses/{id}, settlements/{id}    the money
+    //   messages/{id}                      group chat
     //   activity/{id}                      history (add only, never changed)
     // groupInvites/{CODE}                  lets a person with the code find the group
 
@@ -131,9 +132,9 @@ service cloud.firestore {
           (roleOf(gid) == 'owner'
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
             && request.resource.data.role in ['owner', 'admin', 'member'])
-          // anybody may update their own name / photo, not their role
+          // anybody may update their own name / photo / chat-read time, not their role
           || (mid == request.auth.uid
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photoUrl']))
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photoUrl', 'lastReadAt']))
         );
 
         allow delete: if isMember(gid) && (
@@ -188,6 +189,23 @@ service cloud.firestore {
         allow delete: if isMember(gid) && groupActive(gid)
           && ((resource.data.status == 'pending' && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid))
               || isAdmin(gid));
+      }
+
+      // group chat (text only). Deleting just blanks the text.
+      match /messages/{mid} {
+        allow read: if isMember(gid);
+        allow create: if isMember(gid) && groupActive(gid)
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1 && request.resource.data.text.size() <= 1000
+          && request.resource.data.deleted == false
+          && request.resource.data.keys().hasOnly(['senderId', 'senderName', 'text', 'createdAt', 'replyToId', 'replyPreview', 'deleted']);
+        allow update: if isMember(gid) && groupActive(gid)
+          && (resource.data.senderId == request.auth.uid || isAdmin(gid))
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleted', 'text'])
+          && request.resource.data.deleted == true
+          && request.resource.data.text == '';
+        allow delete: if false;
       }
 
       match /activity/{aid} {

@@ -25,6 +25,15 @@ abstract class GroupBackend {
   Stream<List<Json>> watchExpenses(String gid);
   Stream<List<Json>> watchSettlements(String gid);
   Stream<List<Json>> watchActivity(String gid);
+  Stream<List<Json>> watchMessages(String gid);
+
+  Future<void> sendMessage(String gid, GroupMessage m);
+
+  /// Blanks the message text (soft delete).
+  Future<void> deleteMessage(String gid, String messageId);
+
+  /// Remembers that [uid] has read the chat up to [at] (ms).
+  Future<void> markRead(String gid, String uid, int at);
 
   Future<void> createGroup({
     required ExpenseGroup group,
@@ -107,6 +116,19 @@ class FirestoreGroupBackend implements GroupBackend {
 
   @override
   Stream<List<Json>> watchActivity(String gid) => _rows(_g(gid).collection('activity').orderBy('at', descending: true).limit(200));
+
+  @override
+  Stream<List<Json>> watchMessages(String gid) => _rows(_g(gid).collection('messages').orderBy('createdAt', descending: true).limit(200));
+
+  @override
+  Future<void> sendMessage(String gid, GroupMessage m) => _g(gid).collection('messages').doc(m.id).set(m.toMap());
+
+  @override
+  Future<void> deleteMessage(String gid, String messageId) =>
+      _g(gid).collection('messages').doc(messageId).update({'deleted': true, 'text': ''});
+
+  @override
+  Future<void> markRead(String gid, String uid, int at) => _g(gid).collection('members').doc(uid).update({'lastReadAt': at});
 
   void _log(WriteBatch b, String gid, GroupActivity a) {
     b.set(_g(gid).collection('activity').doc(a.id), a.toMap());
@@ -254,6 +276,7 @@ class MemoryGroupBackend implements GroupBackend {
   final Map<String, Map<String, Json>> expenses = {};
   final Map<String, Map<String, Json>> settlements = {};
   final Map<String, Map<String, Json>> activity = {};
+  final Map<String, Map<String, Json>> messages = {};
   final Map<String, Json> invites = {};
   final StreamController<void> _changes = StreamController<void>.broadcast();
 
@@ -295,6 +318,27 @@ class MemoryGroupBackend implements GroupBackend {
 
   @override
   Stream<List<Json>> watchActivity(String gid) => _watch(() => _list(activity[gid]));
+
+  @override
+  Stream<List<Json>> watchMessages(String gid) => _watch(() => _list(messages[gid]));
+
+  @override
+  Future<void> sendMessage(String gid, GroupMessage m) async {
+    (messages[gid] ??= {})[m.id] = m.toMap();
+    _emit();
+  }
+
+  @override
+  Future<void> deleteMessage(String gid, String messageId) async {
+    messages[gid]?[messageId]?.addAll({'deleted': true, 'text': ''});
+    _emit();
+  }
+
+  @override
+  Future<void> markRead(String gid, String uid, int at) async {
+    members[gid]?[uid]?['lastReadAt'] = at;
+    _emit();
+  }
 
   void _log(String gid, GroupActivity a) {
     (activity[gid] ??= {})[a.id] = a.toMap();

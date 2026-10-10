@@ -157,6 +157,9 @@ class GroupMember {
   /// Only written when joining: proves the person knew the invite code.
   final String inviteCode;
 
+  /// Time (ms) up to which this person has read the group chat.
+  final int lastReadAt;
+
   const GroupMember({
     required this.uid,
     required this.name,
@@ -164,6 +167,7 @@ class GroupMember {
     required this.role,
     required this.joinedAt,
     this.inviteCode = '',
+    this.lastReadAt = 0,
   });
 
   String get initial => name.trim().isEmpty ? '?' : name.trim().substring(0, 1).toUpperCase();
@@ -175,6 +179,7 @@ class GroupMember {
         role: role ?? this.role,
         joinedAt: joinedAt,
         inviteCode: inviteCode,
+        lastReadAt: lastReadAt,
       );
 
   Json toMap() => {
@@ -196,6 +201,73 @@ class GroupMember {
       role: roleFrom(m['role']),
       joinedAt: _i(m['joinedAt']),
       inviteCode: _s(m['inviteCode'], 20),
+      lastReadAt: _i(m['lastReadAt']),
+    );
+  }
+}
+
+/// One chat message of a group. Deleting only blanks the text (so replies still make sense).
+class GroupMessage {
+  final String id;
+  final String senderId;
+  final String senderName;
+  final String text;
+  final int createdAt;
+  final String replyToId;
+  final String replyPreview;
+  final bool deleted;
+
+  const GroupMessage({
+    required this.id,
+    required this.senderId,
+    required this.senderName,
+    required this.text,
+    required this.createdAt,
+    this.replyToId = '',
+    this.replyPreview = '',
+    this.deleted = false,
+  });
+
+  factory GroupMessage.create({
+    required String senderId,
+    required String senderName,
+    required String text,
+    String replyToId = '',
+    String replyPreview = '',
+  }) =>
+      GroupMessage(
+        id: 'm_${newId()}',
+        senderId: senderId,
+        senderName: senderName,
+        text: text.length > 1000 ? text.substring(0, 1000) : text,
+        createdAt: nowMs(),
+        replyToId: replyToId,
+        replyPreview: replyPreview.length > 80 ? replyPreview.substring(0, 80) : replyPreview,
+      );
+
+  Json toMap() => {
+        'senderId': senderId,
+        'senderName': senderName,
+        'text': text,
+        'createdAt': createdAt,
+        'replyToId': replyToId,
+        'replyPreview': replyPreview,
+        'deleted': deleted,
+      };
+
+  static GroupMessage? fromMap(Json m) {
+    final id = _s(m['id'], 80);
+    final sender = _s(m['senderId'], 128);
+    if (id.isEmpty || sender.isEmpty) return null;
+    return GroupMessage(
+      id: id,
+      senderId: sender,
+      senderName: _s(m['senderName'], 60),
+      text: _s(m['text'], 1000),
+      createdAt: _i(m['createdAt']),
+      replyToId: _s(m['replyToId'], 80),
+      replyPreview: _s(m['replyPreview'], 80),
+      deleted: m['deleted'] == true,
     );
   }
 }
