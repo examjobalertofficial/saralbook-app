@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SaralBook App Links
  * Description: Makes https://saralbook.com/app/join/CODE links open the SaralBook app (Android App Links) and shows a small "Open in app / Get it on Google Play" page when the app is not installed.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: SaralBook
  * License: GPLv2 or later
  *
@@ -38,8 +38,15 @@ add_action(
 		$path = '/' . trim( (string) $path, '/' );
 
 		if ( '/.well-known/assetlinks.json' === $path ) {
+			// WordPress marks unknown addresses as 404 before this runs; browsers still show the
+			// body, but Android and Google reject a 404. Force a real 200.
+			status_header( 200 );
+			if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+				define( 'DONOTCACHEPAGE', true ); // Cache plugins: do not store this response.
+			}
+			do_action( 'litespeed_control_set_nocache', 'saralbook assetlinks' );
 			header( 'Content-Type: application/json; charset=utf-8' );
-			header( 'Cache-Control: public, max-age=3600' );
+			header( "Cache-Control: no-cache" );
 			echo wp_json_encode(
 				array(
 					array(
@@ -61,6 +68,9 @@ add_action(
 				return;
 			}
 			status_header( 200 );
+			if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+				define( 'DONOTCACHEPAGE', true );
+			}
 			nocache_headers();
 			header( 'Content-Type: text/html; charset=utf-8' );
 			$app   = esc_url( 'saralbook://join/' . $code, array( 'saralbook' ) );

@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// SaralBook - Firestore security rules (Phase 8: personal data + group expenses).
+// SaralBook - Firestore security rules (Phase 11: personal data + group expenses + owner switches).
 // Rule of thumb: a signed-in person can only touch their own data, and a group's
 // data only if they are a member of that group.
 service cloud.firestore {
@@ -229,6 +229,39 @@ service cloud.firestore {
         && getAfter(memberPath(request.resource.data.groupId, request.auth.uid)).data.role in ['owner', 'admin'];
       allow delete: if signedIn() && isAdmin(resource.data.groupId);
       allow update: if false;
+    }
+
+    // ======================= Owner switches (Phase 11) =======================
+    // admins/{uid}      one document per owner/admin. Create it BY HAND in the
+    //                   Firebase console (document id = the person's Authentication
+    //                   user id). The app can never create or change it.
+    // appConfig/main    maintenance, feature switches, tool switches, update rules.
+    //                   Everyone may read it; only admins may write it.
+
+    function isAppAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{uid} {
+      // a person can only ask "am I an admin?" about themselves
+      allow get: if isOwner(uid);
+      allow list, create, update, delete: if false;
+    }
+
+    match /appConfig/{docId} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if docId == 'main' && isAppAdmin()
+        && request.resource.data.keys().hasOnly(
+             ['maintenance', 'flags', 'disabledTools', 'update', 'updatedAt', 'updatedBy'])
+        && request.resource.data.maintenance is map
+        && request.resource.data.flags is map
+        && request.resource.data.disabledTools is list
+        && request.resource.data.disabledTools.size() <= 80
+        && request.resource.data.update is map
+        && request.resource.data.updatedBy == request.auth.uid;
+      allow delete: if docId == 'main' && isAppAdmin();
     }
 
     // Everything else is closed.

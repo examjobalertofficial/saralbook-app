@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../config/endpoints.dart';
 import '../../config/websites.dart';
 import '../security/safe_url.dart';
+import 'control.dart';
 
 class Maintenance {
   final bool enabled;
@@ -59,12 +60,45 @@ class AppRemoteConfig {
   final List<Website> sites;
   final List<HomeSection> sections;
 
+  /// Feature switches (missing = on). See [FeatureFlags].
+  final Map<String, bool> flags;
+
+  /// Tool ids the owner switched off.
+  final Set<String> disabledTools;
+  final UpdatePolicy update;
+
   const AppRemoteConfig({
     required this.maintenance,
     required this.announcements,
     required this.sites,
     required this.sections,
+    this.flags = const {},
+    this.disabledTools = const {},
+    this.update = UpdatePolicy.none,
   });
+
+  bool flagOn(String id) => flags[id] ?? true;
+
+  bool toolOn(String id) => !disabledTools.contains(id);
+
+  /// Puts the owner's Admin-panel switches on top of this configuration.
+  /// They can only restrict (maintenance on, feature off, tool off) or add
+  /// update rules; they never re-open something the website closed.
+  AppRemoteConfig withControl(AppControl c) => AppRemoteConfig(
+        maintenance: c.maintenanceEnabled
+            ? Maintenance(
+                enabled: true,
+                blocking: c.maintenanceBlocking || (maintenance.enabled && maintenance.blocking),
+                message: c.maintenanceMessage.isNotEmpty ? c.maintenanceMessage : maintenance.message,
+              )
+            : maintenance,
+        announcements: announcements,
+        sites: sites,
+        sections: sections,
+        flags: {for (final id in FeatureFlags.all) id: flagOn(id) && c.flagOn(id)},
+        disabledTools: {...disabledTools, ...c.disabledTools},
+        update: c.update.isSet ? c.update : update,
+      );
 
   static const Set<String> supportedSectionTypes = {'platforms', 'feed', 'recent', 'favorites', 'expense'};
 
@@ -227,6 +261,9 @@ class AppRemoteConfig {
       announcements: announcements,
       sites: sites,
       sections: sections,
+      flags: parseFlags(json['flags']),
+      disabledTools: parseToolIds(json['disabledTools']),
+      update: UpdatePolicy.fromMap(json['update']),
     );
   }
 }

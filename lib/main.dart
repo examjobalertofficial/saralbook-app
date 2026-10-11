@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'config/app_info.dart';
 import 'core/app_services.dart';
@@ -13,6 +14,8 @@ import 'core/router/app_router.dart';
 import 'core/settings/settings_controller.dart';
 import 'screens/groups/groups_home_screen.dart';
 import 'screens/maintenance_screen.dart';
+import 'screens/update_required_screen.dart';
+import 'widgets/feature_gate.dart';
 import 'screens/tools/tool_catalog.dart';
 import 'theme/app_theme.dart';
 
@@ -42,6 +45,15 @@ class _SaralBookAppState extends State<SaralBookApp> {
     // Checks if someone is already signed in (no internet needed).
     unawaited(widget.services.auth.init());
     unawaited(_listenForLinks());
+    unawaited(_readBuildNumber());
+  }
+
+  /// The build number lets the owner ask old versions to update.
+  Future<void> _readBuildNumber() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      widget.services.config.setCurrentBuild(int.tryParse(info.buildNumber) ?? 0);
+    } catch (_) {/* unknown build: no update rule applies */}
   }
 
   StreamSubscription<Uri>? _linkSub;
@@ -74,7 +86,9 @@ class _SaralBookAppState extends State<SaralBookApp> {
       case ToolLink(:final toolId):
         for (final e in toolCatalog) {
           if (e.id == toolId) {
-            nav.push(MaterialPageRoute<void>(builder: e.builder));
+            nav.push(MaterialPageRoute<void>(
+              builder: widget.services.config.toolOn(e.id) ? e.builder : (_) => const ToolOffScreen(),
+            ));
             break;
           }
         }
@@ -117,13 +131,21 @@ class _SaralBookAppState extends State<SaralBookApp> {
             routerConfig: _router,
             // Full-screen maintenance message, only if the owner turns it on.
             builder: (context, child) => ListenableBuilder(
-              listenable: config,
+              listenable: Listenable.merge([config, widget.services.admin]),
               builder: (context, _) {
+                // Owners/admins are never locked out, so they can undo a mistake.
+                if (widget.services.admin.isAdmin) return child ?? const SizedBox.shrink();
                 final m = config.maintenance;
                 if (m.enabled && m.blocking) {
                   return MaintenanceScreen(
                     message: m.message,
                     onRetry: () => config.refresh(force: true),
+                  );
+                }
+                if (config.updateRequired) {
+                  return UpdateRequiredScreen(
+                    message: config.update.message,
+                    url: config.update.target,
                   );
                 }
                 return child ?? const SizedBox.shrink();

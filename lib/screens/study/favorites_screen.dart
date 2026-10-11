@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_services.dart';
 import '../../core/l10n/ltext.dart';
 import '../../core/personal/models.dart';
 import '../../core/personal/personal_data.dart';
 import '../../utils/navigation.dart';
+import '../../widgets/feature_gate.dart';
 import '../../widgets/page_body.dart';
 import '../../widgets/tr.dart';
 import '../tools/tool_catalog.dart';
@@ -40,7 +42,10 @@ void openFavorite(BuildContext context, Favorite f) {
     final id = f.url.substring(toolPrefix.length);
     final matches = toolCatalog.where((e) => e.id == id);
     if (matches.isNotEmpty) {
-      Navigator.of(context, rootNavigator: true).push(MaterialPageRoute<void>(builder: matches.first.builder));
+      final on = AppScope.of(context).config.toolOn(id);
+      Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute<void>(builder: on ? matches.first.builder : (_) => const ToolOffScreen()),
+      );
     }
     return;
   }

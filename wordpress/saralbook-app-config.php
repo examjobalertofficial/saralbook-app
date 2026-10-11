@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SaralBook App Config
  * Description: Controls the SaralBook mobile app (Home sections, announcements, maintenance, service on/off) from the WordPress dashboard. No app update needed.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: SaralBook
  * License: GPLv2 or later
  *
@@ -24,6 +24,15 @@ function saralbook_app_services() {
 		'saralbooktest' => 'SaralBook Test (mock tests)',
 		'saralbookstore' => 'SaralBook Store',
 		'onlinecalcy'   => 'Online Calcy',
+	);
+}
+
+/** Features you can switch off. Keys must match the names inside the app. */
+function saralbook_app_flags() {
+	return array(
+		'groups'          => 'Group Expenses',
+		'group_chat'      => 'Group chat',
+		'expense_tracker' => 'Expense Tracker',
 	);
 }
 
@@ -80,6 +89,26 @@ function saralbook_app_sanitize( $in ) {
 			'message' => sanitize_text_field( $row['message'] ?? '' ),
 		);
 	}
+
+	$out['flags'] = array();
+	foreach ( array_keys( saralbook_app_flags() ) as $id ) {
+		$out['flags'][ $id ] = ! empty( $in['flags'][ $id ] ) ? 1 : 0;
+	}
+
+	// Tool ids, separated by commas or spaces: letters, numbers and _ only.
+	$ids = preg_split( '/[\s,]+/', strtolower( (string) ( $in['disabledTools'] ?? '' ) ) );
+	$ids = array_filter( $ids, function ( $x ) {
+		return (bool) preg_match( '/^[a-z0-9_]{1,40}$/', $x );
+	} );
+	$out['disabledTools'] = implode( ', ', array_slice( array_unique( $ids ), 0, 80 ) );
+
+	$u = $in['update'] ?? array();
+	$out['update'] = array(
+		'minBuild'    => max( 0, (int) ( $u['minBuild'] ?? 0 ) ),
+		'latestBuild' => max( 0, (int) ( $u['latestBuild'] ?? 0 ) ),
+		'message'     => sanitize_text_field( $u['message'] ?? '' ),
+		'url'         => saralbook_app_allowed_url( $u['url'] ?? '' ),
+	);
 
 	$out['sections'] = array();
 	for ( $i = 0; $i < 8; $i++ ) {
@@ -142,6 +171,33 @@ function saralbook_app_render_page() {
 					<td><input type="text" class="large-text" name="<?php echo esc_attr( $name ); ?>[services][<?php echo esc_attr( $id ); ?>][message]" value="<?php echo esc_attr( $r['message'] ?? '' ); ?>"></td>
 				</tr>
 			<?php endforeach; ?>
+			</tbody></table>
+
+			<h2>Features (turn one off if it has a problem)</h2>
+			<table class="widefat striped"><tbody>
+			<?php foreach ( saralbook_app_flags() as $id => $label ) :
+				$on = isset( $o['flags'][ $id ] ) ? ! empty( $o['flags'][ $id ] ) : true; ?>
+				<tr>
+					<td><?php echo esc_html( $label ); ?></td>
+					<td><label><input type="checkbox" name="<?php echo esc_attr( $name ); ?>[flags][<?php echo esc_attr( $id ); ?>]" value="1" <?php checked( $on ); ?>> Available</label></td>
+				</tr>
+			<?php endforeach; ?>
+			</tbody></table>
+
+			<h2>Tools to turn off</h2>
+			<p>Tool ids separated by commas, for example <code>resume_maker, pdf_merge</code>. Leave empty to keep every tool on.
+			The ids are listed in the app's Admin panel (More &gt; Admin panel &gt; Tools).</p>
+			<p><input type="text" class="large-text" name="<?php echo esc_attr( $name ); ?>[disabledTools]" value="<?php echo esc_attr( $o['disabledTools'] ?? '' ); ?>"></p>
+
+			<h2>App updates</h2>
+			<p>The build number is the number after the + in the app version (1.11.0+13 means build 13).
+			Leave both at 0 for no update rules.</p>
+			<?php $up = $o['update'] ?? array(); ?>
+			<table class="form-table"><tbody>
+				<tr><th>Must update below build</th><td><input type="number" min="0" name="<?php echo esc_attr( $name ); ?>[update][minBuild]" value="<?php echo (int) ( $up['minBuild'] ?? 0 ); ?>"> Older apps see a full-screen "Please update".</td></tr>
+				<tr><th>Latest build</th><td><input type="number" min="0" name="<?php echo esc_attr( $name ); ?>[update][latestBuild]" value="<?php echo (int) ( $up['latestBuild'] ?? 0 ); ?>"> Older apps see a small "Update available" note on Home.</td></tr>
+				<tr><th>Message (optional)</th><td><input type="text" class="large-text" name="<?php echo esc_attr( $name ); ?>[update][message]" value="<?php echo esc_attr( $up['message'] ?? '' ); ?>"></td></tr>
+				<tr><th>Where to update (optional)</th><td><input type="url" class="large-text" placeholder="https://saralbook.com/app-download/" name="<?php echo esc_attr( $name ); ?>[update][url]" value="<?php echo esc_attr( $up['url'] ?? '' ); ?>"> Empty = the Google Play page.</td></tr>
 			</tbody></table>
 
 			<h2>Home sections (top to bottom, max 8)</h2>
@@ -223,6 +279,19 @@ function saralbook_app_rest_config() {
 			'message' => (string) ( $r['message'] ?? '' ),
 		);
 	}
+
+	$out['flags'] = array();
+	foreach ( array_keys( saralbook_app_flags() ) as $id ) {
+		$out['flags'][ $id ] = isset( $o['flags'][ $id ] ) ? ! empty( $o['flags'][ $id ] ) : true;
+	}
+	$out['disabledTools'] = array_values( array_filter( preg_split( '/[\s,]+/', (string) ( $o['disabledTools'] ?? '' ) ) ) );
+	$u                    = $o['update'] ?? array();
+	$out['update']        = array(
+		'minBuild'    => (int) ( $u['minBuild'] ?? 0 ),
+		'latestBuild' => (int) ( $u['latestBuild'] ?? 0 ),
+		'message'     => (string) ( $u['message'] ?? '' ),
+		'url'         => (string) ( $u['url'] ?? '' ),
+	);
 
 	// Sections are only sent when you filled some in; otherwise the app uses its built-in Home.
 	$sections = array();

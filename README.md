@@ -143,6 +143,15 @@ Play Store bundle:
   skills / personal details / declaration, Hindi text, PDF to share or save. Saved only on the phone.
 - **Publish the new Firestore rules** (firebase/firestore.rules) - see docs/FIREBASE_SETUP.md.
 
+## What's new in 1.11.0 (Phase 11: Admin and remote configuration)
+- **Admin panel** (More > Admin panel): only for Google accounts you list as admins in the cloud. Nobody else sees it,
+  and no password or secret is stored in the app. Switches: maintenance, feature on/off (Group Expenses, Group chat,
+  Expense Tracker), turn individual tools off, update rules, and a "check all websites" button.
+- **Update rules**: ask old builds to update (full screen) or show a gentle "Update available" note on Home.
+- **WordPress** plugin 1.1.0 has the same switches (features, tools, updates) next to the existing ones.
+- Owners/admins are never locked out of the app by maintenance or update rules.
+- **Publish the updated Firestore rules** (firebase/firestore.rules) and **create your admin document** - see docs/ADMIN.md.
+
 ## What's new in 1.10.0 (Phase 10: Deep links + sharing)
 - Group invites now share a **tap-to-join link** (`https://saralbook.com/app/join/CODE`) plus the code.
 - The app also understands `saralbook://join/CODE`, `saralbook://tool/ID`, `saralbook://tab/NAME`, `saralbook://groups`.

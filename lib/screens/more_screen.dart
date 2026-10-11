@@ -13,6 +13,7 @@ import '../widgets/page_body.dart';
 import '../core/l10n/ltext.dart';
 import '../widgets/tr.dart';
 import 'account/account_data_screen.dart';
+import 'admin/admin_screen.dart';
 import 'account/cloud_check_screen.dart';
 import 'account/account_widgets.dart';
 import 'expense/expense_home_screen.dart';
@@ -194,6 +195,20 @@ class MoreScreen extends StatelessWidget {
                 messenger.showSnackBar(SnackBar(content: Text(s.cacheCleared)));
               },
               subtitle: s.clearCacheHint,
+            ),
+            // Only owners/admins (decided by the cloud) ever see this.
+            ListenableBuilder(
+              listenable: AppScope.of(context).admin,
+              builder: (context, _) => AppScope.of(context).admin.isAdmin
+                  ? tile(
+                      Icons.admin_panel_settings_outlined,
+                      'Admin panel',
+                      () => Navigator.of(context, rootNavigator: true).push(
+                        MaterialPageRoute<void>(builder: (_) => const AdminScreen()),
+                      ),
+                      subtitle: 'Maintenance, features, updates',
+                    )
+                  : const SizedBox.shrink(),
             ),
             const Divider(height: 24),
             tile(Icons.info_outline_rounded, s.aboutApp, () {

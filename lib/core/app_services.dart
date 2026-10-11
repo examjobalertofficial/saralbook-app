@@ -6,7 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'auth/auth_controller.dart';
 import 'auth/cloud_sync.dart';
 import 'cache/cache_store.dart';
+import 'config/admin_controller.dart';
 import 'config/config_controller.dart';
+import 'config/control_backend.dart';
 import 'expense/currency.dart';
 import 'feed/feed_repository.dart';
 import 'groups/group_backend.dart';
@@ -33,7 +35,10 @@ class AppServices {
     required this.rates,
     required this.groups,
     DeepLinkController? links,
-  }) : links = links ?? DeepLinkController();
+    AdminController? admin,
+  })  : links = links ?? DeepLinkController(),
+        admin = admin ??
+            AdminController(auth: auth, backend: const NoControlBackend(), config: config);
 
   final SettingsController settings;
   final CacheStore cache;
@@ -52,14 +57,18 @@ class AppServices {
   /// A link that is waiting for its screen (e.g. a group invite).
   final DeepLinkController links;
 
+  /// Is the signed-in person an owner/admin? (decided by the cloud, not the app)
+  final AdminController admin;
+
   static Future<AppServices> create() async {
     final prefs = await SharedPreferences.getInstance();
     final settings = await SettingsController.load();
     final cache = CacheStore(prefs);
-    final config = ConfigController(cache)..loadCached();
+    final auth = AuthController.firebase();
+    final control = FirestoreControlBackend(auth);
+    final config = ConfigController(cache, control: control)..loadCached();
     final layout = HomeLayoutController.load(prefs);
     final rates = RateService(cache: cache, prefs: prefs)..loadCached();
-    final auth = AuthController.firebase();
     // Keeps theme/language/Home layout in the cloud for signed-in people.
     final sync = CloudProfileSync(auth: auth, settings: settings, layout: layout)..start();
     return AppServices(
@@ -72,6 +81,7 @@ class AppServices {
       auth: auth,
       sync: sync,
       rates: rates,
+      admin: AdminController(auth: auth, backend: control, config: config),
       groups: GroupsHub(auth, FirestoreGroupBackend.new),
       personal: PersonalDataHub(
         auth,

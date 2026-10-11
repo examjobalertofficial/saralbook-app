@@ -4,9 +4,12 @@ import '../core/app_services.dart';
 import '../core/config/config_controller.dart';
 import '../core/config/remote_config.dart';
 import '../core/l10n/app_strings.dart';
+import '../core/l10n/ltext.dart';
 import '../utils/navigation.dart';
 import '../widgets/brand_logo.dart';
 import '../widgets/page_body.dart';
+import '../widgets/tr.dart';
+import 'update_required_screen.dart';
 import 'home/customize_screen.dart';
 import 'home/expense_section.dart';
 import 'home/favorites_section.dart';
@@ -144,6 +147,19 @@ class _Notices extends StatelessWidget {
         message: m.message.isEmpty ? s.maintenanceMessage : m.message,
         background: scheme.tertiaryContainer,
         foreground: scheme.onTertiaryContainer,
+      ));
+    }
+    if (config.updateAvailable) {
+      children.add(_Banner(
+        icon: Icons.system_update_rounded,
+        title: tr(context, t('Update available', 'नया अपडेट उपलब्ध')),
+        message: config.update.message.isEmpty
+            ? tr(context, t('A newer version of SaralBook is ready. Tap to update.',
+                'सरलबुक का नया वर्ज़न तैयार है। अपडेट करने के लिए टैप करें।'))
+            : config.update.message,
+        background: scheme.secondaryContainer,
+        foreground: scheme.onSecondaryContainer,
+        onTap: () => openUpdatePage(config.update.target),
       ));
     }
     for (final n in notes) {

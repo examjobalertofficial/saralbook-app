@@ -161,3 +161,10 @@ Without them the build still works but uses the debug key (testing only).
 `core/links/deep_link.dart` parses URIs into `DeepLink` values; `link_listener.dart` wraps `app_links`.
 `main.dart` waits for the splash, then routes the link. A join code is kept in `DeepLinkController`
 so the Groups screen can open the Join sheet with the code. Manifest filters are added by `tool/configure_android.py`.
+
+## Admin and remote switches (1.11.0)
+`core/config/control.dart` holds the switch model (`FeatureFlags`, `UpdatePolicy`, `AppControl`).
+`ConfigController` keeps two layers: the website config (`_base`) and the owner's cloud switches (`_override`);
+`AppRemoteConfig.withControl` merges them (stricter wins). `ControlBackend` reads/writes Firestore `appConfig/main`
+and checks `admins/{uid}`; `AdminController` decides who sees the Admin panel. Screens use `FeatureGate`
+(features) and `config.toolOn(id)` (tools); `main.dart` shows the maintenance/update screens (admins bypass them).

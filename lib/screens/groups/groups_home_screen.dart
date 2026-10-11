@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/config/control.dart' show FeatureFlags;
 import '../../core/expense/money.dart';
 import '../../core/app_services.dart';
 import '../../core/groups/group_backend.dart';
@@ -8,6 +9,7 @@ import '../../core/groups/group_controllers.dart';
 import '../../core/groups/group_models.dart';
 import '../../core/links/deep_link.dart';
 import '../../core/l10n/ltext.dart';
+import '../../widgets/feature_gate.dart';
 import '../../widgets/page_body.dart';
 import '../../widgets/tr.dart';
 import '../study/personal_ui.dart';
@@ -26,8 +28,11 @@ class GroupsHomeScreen extends StatelessWidget {
   const GroupsHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      GroupsGate(title: _title, builder: (context, groups) => _GroupsHome(groups: groups));
+  Widget build(BuildContext context) => FeatureGate(
+        flag: FeatureFlags.groups,
+        title: _title,
+        child: GroupsGate(title: _title, builder: (context, groups) => _GroupsHome(groups: groups)),
+      );
 }
 
 class _GroupsHome extends StatefulWidget {

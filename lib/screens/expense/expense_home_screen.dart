@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../core/config/control.dart' show FeatureFlags;
 import '../../core/expense/logic.dart';
 import '../../core/expense/models.dart';
 import '../../core/expense/money.dart';
@@ -8,6 +9,7 @@ import '../../core/expense/recurring_engine.dart';
 import '../../core/l10n/ltext.dart';
 import '../../core/personal/logic.dart' show DateRange, ProgressPeriod, rangeFor;
 import '../../core/personal/personal_data.dart';
+import '../../widgets/feature_gate.dart';
 import '../../widgets/page_body.dart';
 import '../../widgets/tr.dart';
 import '../study/personal_ui.dart';
@@ -31,8 +33,11 @@ class ExpenseHomeScreen extends StatelessWidget {
   const ExpenseHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      PersonalGate(title: _title, builder: (context, data) => _ExpenseHome(data: data));
+  Widget build(BuildContext context) => FeatureGate(
+        flag: FeatureFlags.expenseTracker,
+        title: _title,
+        child: PersonalGate(title: _title, builder: (context, data) => _ExpenseHome(data: data)),
+      );
 }
 
 class _ExpenseHome extends StatefulWidget {

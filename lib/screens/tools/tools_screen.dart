@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_services.dart';
+import '../../core/config/config_controller.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/personal/models.dart' show FavoriteKind;
 import '../../core/tools/calc_model.dart';
@@ -41,7 +42,14 @@ class _ToolsScreenState extends State<ToolsScreen> {
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
     final config = AppScope.of(context).config;
-    final entries = toolCatalog.where((e) => e.matches(_query)).toList();
+    return ListenableBuilder(
+      listenable: config,
+      builder: (context, _) => _page(context, s, config),
+    );
+  }
+
+  Widget _page(BuildContext context, AppStrings s, ConfigController config) {
+    final entries = toolCatalog.where((e) => config.toolOn(e.id) && e.matches(_query)).toList();
 
     return Scaffold(
       appBar: AppBar(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../core/config/control.dart' show FeatureFlags;
 import '../../core/expense/export_table.dart';
 import '../../core/expense/money.dart';
 import '../../core/expense/pdf_report.dart';
@@ -14,6 +15,7 @@ import '../../core/groups/group_logic.dart';
 import '../../core/groups/group_models.dart';
 import '../../core/l10n/ltext.dart';
 import '../../core/tools/calc_math.dart' show fmtDate;
+import '../../widgets/feature_gate.dart';
 import '../../widgets/page_body.dart';
 import '../../widgets/tr.dart';
 import '../expense/expense_ui.dart';
@@ -174,7 +176,12 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                               _BalancesTab(session: _session),
                               _MembersTab(session: _session, onLeft: () => Navigator.of(context).pop()),
                               _ActivityTab(session: _session),
-                              _ChatTab(session: _session),
+                              FeatureGate(
+                                flag: FeatureFlags.groupChat,
+                                title: t('Chat', 'चैट'),
+                                inline: true,
+                                child: _ChatTab(session: _session),
+                              ),
                             ],
                           ),
                   ),
