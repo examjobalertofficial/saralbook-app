@@ -226,6 +226,15 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release
 
+      - name: Print APK signing certificate SHA-256
+        run: |
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n 1)
+          if [ -z "$APKSIGNER" ]; then
+            echo "ERROR: apksigner not found"
+            exit 1
+          fi
+          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk
+
       - name: Build Play Store AAB
         run: flutter build appbundle --release
 
