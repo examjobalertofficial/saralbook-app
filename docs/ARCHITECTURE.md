@@ -156,3 +156,8 @@ Storage: `users/{uid}/...` and `groups/{gid}/...`, 10 MB cap, content-type check
 Repository -> Settings -> Secrets and variables -> Actions:
 `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
 Without them the build still works but uses the debug key (testing only).
+
+## Deep links (1.10.0)
+`core/links/deep_link.dart` parses URIs into `DeepLink` values; `link_listener.dart` wraps `app_links`.
+`main.dart` waits for the splash, then routes the link. A join code is kept in `DeepLinkController`
+so the Groups screen can open the Join sheet with the code. Manifest filters are added by `tool/configure_android.py`.

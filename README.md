@@ -143,6 +143,13 @@ Play Store bundle:
   skills / personal details / declaration, Hindi text, PDF to share or save. Saved only on the phone.
 - **Publish the new Firestore rules** (firebase/firestore.rules) - see docs/FIREBASE_SETUP.md.
 
+## What's new in 1.10.0 (Phase 10: Deep links + sharing)
+- Group invites now share a **tap-to-join link** (`https://saralbook.com/app/join/CODE`) plus the code.
+- The app also understands `saralbook://join/CODE`, `saralbook://tool/ID`, `saralbook://tab/NAME`, `saralbook://groups`.
+- Opening an invite link takes you straight to Group Expenses > Join with the code filled in.
+- For https links to open the app directly, install `wordpress/saralbook-app-links.php` and follow docs/DEEP_LINKS.md.
+  The `saralbook://` links work without any setup.
+
 ## What's new in 1.9.0 (Phase 9: Group chat)
 - New **Chat** tab inside every group: text messages, reply, copy, delete (your own; admins can delete any), unread badge.
 - Chat is read-only in archived groups.

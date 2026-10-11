@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/expense/money.dart';
+import '../../core/app_services.dart';
 import '../../core/groups/group_backend.dart';
 import '../../core/groups/group_controllers.dart';
 import '../../core/groups/group_models.dart';
+import '../../core/links/deep_link.dart';
 import '../../core/l10n/ltext.dart';
 import '../../widgets/page_body.dart';
 import '../../widgets/tr.dart';
@@ -28,9 +30,42 @@ class GroupsHomeScreen extends StatelessWidget {
       GroupsGate(title: _title, builder: (context, groups) => _GroupsHome(groups: groups));
 }
 
-class _GroupsHome extends StatelessWidget {
+class _GroupsHome extends StatefulWidget {
   final GroupsController groups;
   const _GroupsHome({required this.groups});
+
+  @override
+  State<_GroupsHome> createState() => _GroupsHomeState();
+}
+
+class _GroupsHomeState extends State<_GroupsHome> {
+  GroupsController get groups => widget.groups;
+  DeepLinkController? _links;
+
+  /// A tapped invite link waits here until this screen (signed in) can use it.
+  void _checkPendingInvite() {
+    final code = _links?.takePendingJoin();
+    if (code != null) showJoinSheet(context, groups, initialCode: code);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_links == null) {
+      final links = AppScope.of(context).links;
+      _links = links;
+      links.addListener(_checkPendingInvite);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _checkPendingInvite();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _links?.removeListener(_checkPendingInvite);
+    super.dispose();
+  }
 
   static final LText _empty = t(
     'Split bills with friends, flatmates or family. Create a group, or join one with an invite code.',
@@ -208,21 +243,29 @@ class _CreateGroupFormState extends State<_CreateGroupForm> {
 
 // ======================= join group =======================
 
-void showJoinSheet(BuildContext context, GroupsController groups) {
-  showFormSheet<void>(context, (ctx) => _JoinForm(groups: groups, parentContext: context));
+void showJoinSheet(BuildContext context, GroupsController groups, {String? initialCode}) {
+  showFormSheet<void>(context, (ctx) => _JoinForm(groups: groups, parentContext: context, initialCode: initialCode));
 }
 
 class _JoinForm extends StatefulWidget {
   final GroupsController groups;
   final BuildContext parentContext;
-  const _JoinForm({required this.groups, required this.parentContext});
+  final String? initialCode;
+  const _JoinForm({required this.groups, required this.parentContext, this.initialCode});
 
   @override
   State<_JoinForm> createState() => _JoinFormState();
 }
 
 class _JoinFormState extends State<_JoinForm> {
-  final TextEditingController _code = TextEditingController();
+  late final TextEditingController _code = TextEditingController(text: widget.initialCode ?? '');
+
+  @override
+  void initState() {
+    super.initState();
+    // an invite link already carries the code: look the group up right away
+    if (widget.initialCode != null) WidgetsBinding.instance.addPostFrameCallback((_) => _find());
+  }
   bool _busy = false;
   InviteInfo? _found;
   LText? _problem;

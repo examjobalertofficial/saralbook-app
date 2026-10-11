@@ -12,6 +12,7 @@ import 'feed/feed_repository.dart';
 import 'groups/group_backend.dart';
 import 'groups/group_controllers.dart';
 import 'home/home_layout.dart';
+import 'links/deep_link.dart';
 import 'home/recents_controller.dart';
 import 'personal/cloud_collection.dart';
 import 'personal/personal_data.dart';
@@ -31,7 +32,8 @@ class AppServices {
     required this.sync,
     required this.rates,
     required this.groups,
-  });
+    DeepLinkController? links,
+  }) : links = links ?? DeepLinkController();
 
   final SettingsController settings;
   final CacheStore cache;
@@ -46,6 +48,9 @@ class AppServices {
 
   /// Group expenses of the signed-in account (null inside when signed out).
   final GroupsHub groups;
+
+  /// A link that is waiting for its screen (e.g. a group invite).
+  final DeepLinkController links;
 
   static Future<AppServices> create() async {
     final prefs = await SharedPreferences.getInstance();

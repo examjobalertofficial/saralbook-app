@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import '../links/deep_link.dart' show groupInviteLink;
 import 'group_models.dart';
 
 // ======================= Splitting one bill =======================
@@ -232,6 +233,7 @@ String? extractInviteCode(String input) {
 }
 
 String inviteMessage(String groupName, String code) =>
-    'Join my group "$groupName" on SaralBook (Study > Expenses > Groups).\n'
-    'Invite code: $code\n'
+    'Join my group "$groupName" on SaralBook.\n'
+    'Tap to join: ${groupInviteLink(code)}\n'
+    'Or open the app > Group Expenses > Join, and type the code: $code\n'
     'सरलबुक ऐप में ग्रुप "$groupName" से जुड़ें। कोड: $code';
