@@ -46,6 +46,15 @@ class _SaralBookAppState extends State<SaralBookApp> {
     unawaited(widget.services.auth.init());
     unawaited(_listenForLinks());
     unawaited(_readBuildNumber());
+    widget.services.config.addListener(_syncPush);
+    _syncPush();
+  }
+
+  /// Starts push notifications as soon as the website settings carry an App ID.
+  void _syncPush() {
+    final push = widget.services.push;
+    final id = widget.services.config.pushAppId;
+    if (push != null && id.isNotEmpty) unawaited(push.configure(id));
   }
 
   /// The build number lets the owner ask old versions to update.
@@ -99,6 +108,7 @@ class _SaralBookAppState extends State<SaralBookApp> {
 
   @override
   void dispose() {
+    widget.services.config.removeListener(_syncPush);
     _linkSub?.cancel();
     _router.dispose();
     super.dispose();

@@ -35,3 +35,15 @@ the category feed address, e.g.
   (up to 7 days) or the built-in defaults.
 * Feeds are cached 30 minutes. If a website is down the app shows a saved copy
   (marked "Showing saved copy") for at most 24 hours, never older.
+
+
+## Update alerts (plugin `saralbook-update-alerts.php`)
+The OneSignal plugin announces *new* posts. This second plugin covers *edits*: when a post that is already published
+is moved into a new category (for example to Admit Card or Result) or its title changes, the app gets an alert.
+1. Install and activate `saralbook-update-alerts` (upload the zip under Plugins > Add New > Upload Plugin).
+2. Settings > SaralBook Update Alerts: paste the OneSignal **App ID** and **REST API Key**
+   (OneSignal dashboard > Settings > Keys & IDs). The key stays on your website only, never in the app.
+3. Press **Save and send a test alert**. The page shows OneSignal's answer. Your phone gets the test within a minute
+   (the Job alerts switch in the app must be on).
+4. Normal editing now sends an alert at most once per post every 3 hours (you can change this).
+A post published in the last 10 minutes counts as new and is skipped, so nobody gets two alerts.

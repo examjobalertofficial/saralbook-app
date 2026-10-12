@@ -59,6 +59,9 @@ class ConfigController extends ChangeNotifier {
 
   UpdatePolicy get update => _config.update;
 
+  /// OneSignal App ID from the website settings ('' = push not set up).
+  String get pushAppId => _config.pushAppId;
+
   /// The saved owner switches (shown in the Admin panel).
   AppControl get control => _override;
 

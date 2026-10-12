@@ -178,6 +178,27 @@ class MoreScreen extends StatelessWidget {
                 MaterialPageRoute<void>(builder: (_) => const AccountDataScreen()),
               ),
             ),
+            // Push notifications: only shown once the website settings carry the OneSignal App ID.
+            Builder(builder: (context) {
+              final push = AppScope.of(context).push;
+              if (push == null) return const SizedBox.shrink();
+              return ListenableBuilder(
+                listenable: push,
+                builder: (context, _) => !push.available
+                    ? const SizedBox.shrink()
+                    : SwitchListTile(
+                        secondary: Icon(Icons.notifications_active_outlined, color: scheme.primary),
+                        title: Text(tr(context, t('Notifications', 'नोटिफिकेशन'))),
+                        subtitle: Text(tr(
+                          context,
+                          t('New and updated posts: jobs, admit cards, results',
+                              'नई और अपडेट हुई पोस्ट: नौकरी, एडमिट कार्ड, रिज़ल्ट'),
+                        )),
+                        value: push.enabled,
+                        onChanged: (v) => push.setEnabled(v),
+                      ),
+              );
+            }),
             tile(
               Icons.cloud_sync_outlined,
               tr(context, t('Cloud sync check', 'क्लाउड सिंक जांच')),

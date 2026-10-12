@@ -16,6 +16,7 @@ String _body() => jsonEncode([
         'title': {'rendered': 'SSC &amp; Railway &#8211; Result'},
         'link': 'https://examjobalert.com/ssc-result/',
         'date': '2026-10-01T10:00:00',
+        'modified': '2026-10-05T08:00:00',
       },
       {
         'id': 2,
@@ -26,6 +27,17 @@ String _body() => jsonEncode([
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('feed addresses ask WordPress for the newest edit first', () {
+    final u = Uri.parse(FeedRepository.normalizeUrl(_url));
+    expect(u.queryParameters['orderby'], 'modified');
+    expect(u.queryParameters['order'], 'desc');
+    expect(u.queryParameters['_fields'], contains('modified'));
+    // an address that chose its own order keeps it
+    final own = Uri.parse(FeedRepository.normalizeUrl('$_url&orderby=date'));
+    expect(own.queryParameters['orderby'], 'date');
+  });
+
 
   late CacheStore cache;
   late DateTime now;
@@ -63,7 +75,8 @@ void main() {
     final items = parseFeed(_body());
     expect(items.length, 1);
     expect(items.first.title, 'SSC & Railway – Result');
-    expect(items.first.dateLabel, '01 Oct 2026');
+    expect(items.first.dateLabel, '05 Oct 2026'); // last edited day
+    expect(items.first.date, DateTime(2026, 10, 1, 10));
   });
 
   test('network success is returned and saved', () async {

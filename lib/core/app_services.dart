@@ -12,6 +12,7 @@ import 'config/control_backend.dart';
 import 'expense/currency.dart';
 import 'feed/feed_repository.dart';
 import 'groups/group_backend.dart';
+import 'notify/push_controller.dart';
 import 'groups/group_controllers.dart';
 import 'home/home_layout.dart';
 import 'links/deep_link.dart';
@@ -36,6 +37,7 @@ class AppServices {
     required this.groups,
     DeepLinkController? links,
     AdminController? admin,
+    this.push,
   })  : links = links ?? DeepLinkController(),
         admin = admin ??
             AdminController(auth: auth, backend: const NoControlBackend(), config: config);
@@ -56,6 +58,9 @@ class AppServices {
 
   /// A link that is waiting for its screen (e.g. a group invite).
   final DeepLinkController links;
+
+  /// Push notifications (null where the phone/test has none).
+  final PushController? push;
 
   /// Is the signed-in person an owner/admin? (decided by the cloud, not the app)
   final AdminController admin;
@@ -82,6 +87,7 @@ class AppServices {
       sync: sync,
       rates: rates,
       admin: AdminController(auth: auth, backend: control, config: config),
+      push: PushController(prefs),
       groups: GroupsHub(auth, FirestoreGroupBackend.new),
       personal: PersonalDataHub(
         auth,

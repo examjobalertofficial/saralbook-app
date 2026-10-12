@@ -13,11 +13,16 @@ class FeedItem {
   final String title;
   final String link;
   final DateTime? date;
+
+  /// When the post was last edited (WordPress `modified`). A post that was
+  /// moved to another category or fixed later has a newer value than [date].
+  final DateTime? modified;
   const FeedItem({
     required this.id,
     required this.title,
     required this.link,
     this.date,
+    this.modified,
   });
 
   static const List<String> _months = [
@@ -25,8 +30,9 @@ class FeedItem {
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
   ];
 
+  /// Shows the last-edited day (falls back to the publish day).
   String get dateLabel {
-    final d = date;
+    final d = modified ?? date;
     if (d == null) return '';
     final day = d.day.toString().padLeft(2, '0');
     return '$day ${_months[d.month - 1]} ${d.year}';
@@ -91,11 +97,13 @@ List<FeedItem> parseFeed(String body) {
     final link = row['link'];
     if (title.isEmpty || link is! String || !SafeUrl.isAllowed(link)) continue;
     final dateRaw = row['date'];
+    final modifiedRaw = row['modified'];
     items.add(FeedItem(
       id: '${row['id'] ?? link}',
       title: title,
       link: link,
       date: dateRaw is String ? DateTime.tryParse(dateRaw) : null,
+      modified: modifiedRaw is String ? DateTime.tryParse(modifiedRaw) : null,
     ));
   }
   return items;
@@ -132,7 +140,12 @@ class FeedRepository {
   static String normalizeUrl(String url) {
     final uri = Uri.parse(url);
     final q = Map<String, String>.of(uri.queryParameters);
-    q.putIfAbsent('_fields', () => 'id,title,link,date');
+    q.putIfAbsent('_fields', () => 'id,title,link,date,modified');
+    // Newest *change* first, so a post that was edited or moved into a category
+    // (for example to "Admit Card") shows up, not only brand-new posts.
+    // An address that already says orderby=... keeps its own choice.
+    q.putIfAbsent('orderby', () => 'modified');
+    q.putIfAbsent('order', () => 'desc');
     final perPage = int.tryParse(q['per_page'] ?? '') ?? 6;
     q['per_page'] = perPage.clamp(1, 20).toString();
     return uri.replace(queryParameters: q).toString();

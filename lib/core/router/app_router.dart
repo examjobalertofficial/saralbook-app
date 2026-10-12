@@ -7,6 +7,7 @@ import '../../screens/splash_screen.dart';
 import '../../screens/study/study_hub_screen.dart';
 import '../../screens/tabs/platform_tab.dart';
 import '../../screens/tools/tools_screen.dart';
+import '../../widgets/job_alerts_card.dart';
 import '../l10n/app_strings.dart';
 
 /// Single place that defines every screen address in the app.
@@ -52,7 +53,7 @@ GoRouter createRouter() {
                   title: s.jobsTitle,
                   subtitle: s.jobsSubtitle,
                   siteIds: const ['examjobalert'],
-                  comingSoon: s.comingSoonJobs,
+                  extra: const JobAlertsCard(),
                 );
               },
             ),

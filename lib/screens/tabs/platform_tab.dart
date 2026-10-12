@@ -2,19 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_services.dart';
 import '../../utils/navigation.dart';
-import '../../widgets/coming_soon_card.dart';
 import '../../widgets/page_body.dart';
 import '../../widgets/website_card.dart';
 
-/// A tab that lists some of the SaralBook websites plus a note about the
-/// native features that arrive in later updates. Used by Study, Jobs, Tools.
+/// A tab that lists some of the SaralBook websites with an optional card
+/// (for example the job-alert switch) under them.
 class PlatformTab extends StatelessWidget {
   final String title;
   final String subtitle;
   final List<String> siteIds;
-  final String comingSoon;
 
-  /// Optional widget shown above the "coming soon" note (e.g. sign-in prompt).
+  /// Optional widget shown under the websites (e.g. the job-alert switch).
   final Widget? extra;
 
   const PlatformTab({
@@ -22,7 +20,6 @@ class PlatformTab extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.siteIds,
-    required this.comingSoon,
     this.extra,
   });
 
@@ -62,7 +59,6 @@ class PlatformTab extends StatelessWidget {
                 ),
               ),
             if (extra != null) extra!,
-            ComingSoonCard(message: comingSoon),
           ],
             );
           },

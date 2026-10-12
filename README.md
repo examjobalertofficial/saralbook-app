@@ -143,6 +143,14 @@ Play Store bundle:
   skills / personal details / declaration, Hindi text, PDF to share or save. Saved only on the phone.
 - **Publish the new Firestore rules** (firebase/firestore.rules) - see docs/FIREBASE_SETUP.md.
 
+## What's new in 1.12.0 (Phase 12: Alerts, checks, clean-up)
+- **Jobs tab**: the "Coming soon" card is replaced by a real **Job alerts** switch (new and updated jobs, admit cards, results).
+  It shows a plain note until the OneSignal App ID is set in WordPress > SaralBook App.
+- **Update alerts** (new WordPress plugin `wordpress/saralbook-update-alerts.php`): sends a push alert when a post that is already
+  published is moved into another category (for example Admit Card) or its title changes. New posts stay with the OneSignal plugin.
+- Removed the old "Coming soon" note from the Tools tab (those tools are all here now).
+- New automatic check workflow (docs/CI.md): analyse + tests on every branch and pull request, much faster than a full APK build.
+
 ## What's new in 1.11.0 (Phase 11: Admin and remote configuration)
 - **Admin panel** (More > Admin panel): only for Google accounts you list as admins in the cloud. Nobody else sees it,
   and no password or secret is stored in the app. Switches: maintenance, feature on/off (Group Expenses, Group chat,

@@ -52,6 +52,33 @@ if "saralbook" not in s.split("<queries>")[0].split("<application")[-1] or "andr
         s = s.replace("</activity>", filters + "</activity>", 1)
 manifest.write_text(s)
 
+
+# Push notifications: Android 13+ permission and a small status-bar icon
+# (OneSignal looks for a drawable called ic_stat_onesignal_default).
+manifest_text = manifest.read_text()
+if "android.permission.POST_NOTIFICATIONS" not in manifest_text:
+    manifest_text = manifest_text.replace(
+        "<application",
+        '<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <application',
+        1,
+    )
+    manifest.write_text(manifest_text)
+drawable = pathlib.Path("android/app/src/main/res/drawable")
+drawable.mkdir(parents=True, exist_ok=True)
+(drawable / "ic_stat_onesignal_default.xml").write_text(
+    """<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M13,2L5,13h5l-1,9l8,-11h-5z"/>
+</vector>
+"""
+)
+
 # iOS display name (used later for iPhone)
 plist = pathlib.Path("ios/Runner/Info.plist")
 if plist.exists():

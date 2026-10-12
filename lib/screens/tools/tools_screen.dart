@@ -6,7 +6,6 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/personal/models.dart' show FavoriteKind;
 import '../../core/tools/calc_model.dart';
 import '../../utils/navigation.dart';
-import '../../widgets/coming_soon_card.dart';
 import '../../widgets/favorite_button.dart';
 import '../../widgets/page_body.dart';
 import '../../widgets/website_card.dart';
@@ -106,8 +105,6 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   );
                 },
               ),
-              const SizedBox(height: 14),
-              ComingSoonCard(message: s.comingSoonTools),
             ],
           ],
         ),

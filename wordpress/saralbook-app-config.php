@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SaralBook App Config
  * Description: Controls the SaralBook mobile app (Home sections, announcements, maintenance, service on/off) from the WordPress dashboard. No app update needed.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: SaralBook
  * License: GPLv2 or later
  *
@@ -110,6 +110,12 @@ function saralbook_app_sanitize( $in ) {
 		'url'         => saralbook_app_allowed_url( $u['url'] ?? '' ),
 	);
 
+	// OneSignal App ID (public, looks like 8-4-4-4-12 hex digits). Wrong format -> empty.
+	$app_id          = strtolower( trim( (string) ( $in['push']['appId'] ?? '' ) ) );
+	$out['push']     = array(
+		'appId' => preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $app_id ) ? $app_id : '',
+	);
+
 	$out['sections'] = array();
 	for ( $i = 0; $i < 8; $i++ ) {
 		$row  = $in['sections'][ $i ] ?? array();
@@ -199,6 +205,12 @@ function saralbook_app_render_page() {
 				<tr><th>Message (optional)</th><td><input type="text" class="large-text" name="<?php echo esc_attr( $name ); ?>[update][message]" value="<?php echo esc_attr( $up['message'] ?? '' ); ?>"></td></tr>
 				<tr><th>Where to update (optional)</th><td><input type="url" class="large-text" placeholder="https://saralbook.com/app-download/" name="<?php echo esc_attr( $name ); ?>[update][url]" value="<?php echo esc_attr( $up['url'] ?? '' ); ?>"> Empty = the Google Play page.</td></tr>
 			</tbody></table>
+
+			<h2>Push notifications</h2>
+			<p>Paste your OneSignal <strong>App ID</strong> (OneSignal dashboard &gt; Settings &gt; Keys &amp; IDs). It is not secret.
+			Leave empty to keep notifications off in the app. The plugin that sends them is "SaralBook App Push".</p>
+			<?php $pu = $o['push'] ?? array(); ?>
+			<p><input type="text" class="regular-text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" name="<?php echo esc_attr( $name ); ?>[push][appId]" value="<?php echo esc_attr( $pu['appId'] ?? '' ); ?>"></p>
 
 			<h2>Home sections (top to bottom, max 8)</h2>
 			<p><strong>Type "Latest posts"</strong> needs a Feed URL, for example<br>
@@ -292,6 +304,8 @@ function saralbook_app_rest_config() {
 		'message'     => (string) ( $u['message'] ?? '' ),
 		'url'         => (string) ( $u['url'] ?? '' ),
 	);
+
+	$out['push'] = array( 'appId' => (string) ( $o['push']['appId'] ?? '' ) );
 
 	// Sections are only sent when you filled some in; otherwise the app uses its built-in Home.
 	$sections = array();

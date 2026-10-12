@@ -67,6 +67,9 @@ class AppRemoteConfig {
   final Set<String> disabledTools;
   final UpdatePolicy update;
 
+  /// OneSignal App ID for push notifications ('' = not set up yet). It is public.
+  final String pushAppId;
+
   const AppRemoteConfig({
     required this.maintenance,
     required this.announcements,
@@ -75,6 +78,7 @@ class AppRemoteConfig {
     this.flags = const {},
     this.disabledTools = const {},
     this.update = UpdatePolicy.none,
+    this.pushAppId = '',
   });
 
   bool flagOn(String id) => flags[id] ?? true;
@@ -98,6 +102,7 @@ class AppRemoteConfig {
         flags: {for (final id in FeatureFlags.all) id: flagOn(id) && c.flagOn(id)},
         disabledTools: {...disabledTools, ...c.disabledTools},
         update: c.update.isSet ? c.update : update,
+        pushAppId: pushAppId,
       );
 
   static const Set<String> supportedSectionTypes = {'platforms', 'feed', 'recent', 'favorites', 'expense'};
@@ -264,6 +269,16 @@ class AppRemoteConfig {
       flags: parseFlags(json['flags']),
       disabledTools: parseToolIds(json['disabledTools']),
       update: UpdatePolicy.fromMap(json['update']),
+      pushAppId: _pushAppId(json['push']),
     );
+  }
+
+  /// `{"push": {"appId": "xxxxxxxx-xxxx-..."}}` -> the id, or '' if missing or malformed.
+  static String _pushAppId(Object? raw) {
+    if (raw is! Map) return '';
+    final id = raw['appId'];
+    if (id is! String) return '';
+    final t = id.trim();
+    return RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(t) ? t : '';
   }
 }
