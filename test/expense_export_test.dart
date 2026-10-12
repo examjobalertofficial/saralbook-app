@@ -87,7 +87,11 @@ void main() {
         ['खाना ₹']
       ], const []));
       expect(c.contains('खाना ₹'), isTrue);
-      expect(utf8.decode(utf8.encode(c)), c);
+      // Excel needs the byte-order mark at the front (newer Dart versions drop it when decoding,
+      // so look at the raw bytes), and the text itself must survive the round trip.
+      final bytes = utf8.encode(c);
+      expect(bytes.take(3).toList(), [0xEF, 0xBB, 0xBF]);
+      expect(utf8.decode(bytes).contains('खाना ₹'), isTrue);
     });
   });
 

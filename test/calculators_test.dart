@@ -177,9 +177,9 @@ void main() {
     // OBC +3: born on/after 02-01-1991
     expect(result(DateTime(1991, 1, 2), cat: 'obc'), 'Eligible by age');
     expect(result(DateTime(1991, 1, 1), cat: 'obc'), 'Not eligible by age');
-    // extra relaxation adds on top: 32 + 3 + 2 = 37 -> born on/after 02-01-1987
-    expect(result(DateTime(1987, 1, 2), cat: 'obc', extra: '2'), 'Eligible by age');
-    expect(result(DateTime(1987, 1, 1), cat: 'obc', extra: '2'), 'Not eligible by age');
+    // extra relaxation adds on top: 32 + 3 + 2 = 37 -> 2026 - 37 = 1989 -> born on/after 02-01-1989
+    expect(result(DateTime(1989, 1, 2), cat: 'obc', extra: '2'), 'Eligible by age');
+    expect(result(DateTime(1989, 1, 1), cat: 'obc', extra: '2'), 'Not eligible by age');
   });
 
   test('study time counts days from today', () {
