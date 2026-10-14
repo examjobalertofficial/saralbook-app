@@ -11,6 +11,7 @@ import '../../widgets/page_body.dart';
 import '../../widgets/website_card.dart';
 import '../home/section_header.dart';
 import 'tool_catalog.dart';
+import 'tool_style.dart';
 
 /// The Tools tab: search + categories of offline tools, plus OnlineCalcy.
 class ToolsScreen extends StatefulWidget {
@@ -121,10 +122,11 @@ class _ToolGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final lang = Localizations.localeOf(context).languageCode;
     final scheme = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return LayoutBuilder(
       builder: (context, c) {
         const spacing = 10.0;
-        final cols = (c.maxWidth / 220).floor().clamp(2, 4);
+        final cols = (c.maxWidth / 170).floor().clamp(2, 5);
         final width = (c.maxWidth - spacing * (cols - 1)) / cols;
         return Wrap(
           spacing: spacing,
@@ -133,68 +135,104 @@ class _ToolGrid extends StatelessWidget {
             for (final e in entries)
               SizedBox(
                 width: width,
-                child: Card(
-                  elevation: 0,
-                  margin: EdgeInsets.zero,
-                  color: scheme.surfaceContainerLow,
-                  clipBehavior: Clip.antiAlias,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    side: BorderSide(color: scheme.outlineVariant),
-                  ),
-                  child: Stack(
-                    children: [
-                      InkWell(
-                        onTap: () => Navigator.of(context, rootNavigator: true).push(
-                          MaterialPageRoute<void>(builder: e.builder),
-                        ),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 76),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 12, 30, 12),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: scheme.primaryContainer,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(e.icon, color: scheme.onPrimaryContainer),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    e.title.of(lang),
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: FavoriteButton(
-                          title: e.title.of(lang),
-                          urlOf: () => 'saralbook://tool/${e.id}',
-                          kind: FavoriteKind.tool,
-                          size: 18,
-                          compact: true,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: _ToolCard(
+                  entry: e,
+                  lang: lang,
+                  accent: toolAccent(e.id),
+                  surface: scheme.surfaceContainerLow,
+                  dark: dark,
                 ),
               ),
           ],
         );
       },
+    );
+  }
+}
+
+/// One tool: a coloured icon on top, the full name under it (it never breaks
+/// a word in the middle), and the bookmark in the corner.
+class _ToolCard extends StatelessWidget {
+  final ToolEntry entry;
+  final String lang;
+  final Color accent;
+  final Color surface;
+  final bool dark;
+  const _ToolCard({
+    required this.entry,
+    required this.lang,
+    required this.accent,
+    required this.surface,
+    required this.dark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = toolCardTint(accent, surface, dark: dark);
+    final deep = Color.lerp(accent, Colors.black, 0.28) ?? accent;
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      color: tint,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: accent.withAlpha(dark ? 90 : 70)),
+      ),
+      child: Stack(
+        children: [
+          InkWell(
+            onTap: () => Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute<void>(builder: entry.builder),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 112),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [accent, deep],
+                        ),
+                        boxShadow: [
+                          BoxShadow(color: accent.withAlpha(70), blurRadius: 8, offset: const Offset(0, 3)),
+                        ],
+                      ),
+                      child: Icon(entry.icon, color: Colors.white, size: 24),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      entry.title.of(lang),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, height: 1.2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 2,
+            right: 2,
+            child: FavoriteButton(
+              title: entry.title.of(lang),
+              urlOf: () => 'saralbook://tool/${entry.id}',
+              kind: FavoriteKind.tool,
+              size: 18,
+              compact: true,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

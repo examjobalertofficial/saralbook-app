@@ -143,6 +143,10 @@ Play Store bundle:
   skills / personal details / declaration, Hindi text, PDF to share or save. Saved only on the phone.
 - **Publish the new Firestore rules** (firebase/firestore.rules) - see docs/FIREBASE_SETUP.md.
 
+## What's new in 1.12.2 (Tools tab look)
+- Tool cards are now colourful: a coloured icon on top and the full name underneath, so names like "Percentage" or
+  "Compound Interest" no longer break in the middle. Colours only, so the app does not get bigger.
+
 ## What's new in 1.12.1 (Jobs tab follows the website)
 - The **Jobs tab** now shows the Exam Job Alert post lists you set up in WordPress (latest jobs, admit cards, results...),
   the same lists as Home, with pull-to-refresh. Add or reorder them in WordPress > SaralBook App > Home sections; no new APK needed.
