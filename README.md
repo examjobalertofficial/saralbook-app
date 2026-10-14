@@ -143,6 +143,11 @@ Play Store bundle:
   skills / personal details / declaration, Hindi text, PDF to share or save. Saved only on the phone.
 - **Publish the new Firestore rules** (firebase/firestore.rules) - see docs/FIREBASE_SETUP.md.
 
+## What's new in 1.12.1 (Jobs tab follows the website)
+- The **Jobs tab** now shows the Exam Job Alert post lists you set up in WordPress (latest jobs, admit cards, results...),
+  the same lists as Home, with pull-to-refresh. Add or reorder them in WordPress > SaralBook App > Home sections; no new APK needed.
+- Job alerts switch and the Exam Job Alert website card stay on the tab.
+
 ## What's new in 1.12.0 (Phase 12: Alerts, checks, clean-up)
 - **Jobs tab**: the "Coming soon" card is replaced by a real **Job alerts** switch (new and updated jobs, admit cards, results).
   It shows a plain note until the OneSignal App ID is set in WordPress > SaralBook App.

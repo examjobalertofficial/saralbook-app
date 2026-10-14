@@ -5,10 +5,8 @@ import '../../screens/more_screen.dart';
 import '../../screens/shell/app_shell.dart';
 import '../../screens/splash_screen.dart';
 import '../../screens/study/study_hub_screen.dart';
-import '../../screens/tabs/platform_tab.dart';
+import '../../screens/jobs_screen.dart';
 import '../../screens/tools/tools_screen.dart';
-import '../../widgets/job_alerts_card.dart';
-import '../l10n/app_strings.dart';
 
 /// Single place that defines every screen address in the app.
 /// Later phases add deep links here (notification -> exact job/test/product).
@@ -47,15 +45,7 @@ GoRouter createRouter() {
           StatefulShellBranch(routes: [
             GoRoute(
               path: AppRoutes.jobs,
-              builder: (context, state) {
-                final s = AppStrings.of(context);
-                return PlatformTab(
-                  title: s.jobsTitle,
-                  subtitle: s.jobsSubtitle,
-                  siteIds: const ['examjobalert'],
-                  extra: const JobAlertsCard(),
-                );
-              },
+              builder: (context, state) => const JobsScreen(),
             ),
           ]),
           StatefulShellBranch(routes: [
