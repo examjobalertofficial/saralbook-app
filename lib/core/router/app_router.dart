@@ -45,7 +45,7 @@ GoRouter createRouter() {
           StatefulShellBranch(routes: [
             GoRoute(
               path: AppRoutes.jobs,
-              builder: (context, state) => const JobsScreen(),
+              builder: (context, state) => JobsScreen(initialTab: state.uri.queryParameters['tab']),
             ),
           ]),
           StatefulShellBranch(routes: [

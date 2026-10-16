@@ -30,6 +30,12 @@ class FeedItem {
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
   ];
 
+  /// Edited clearly after it was published (more than 3 hours later).
+  bool get isUpdated {
+    final d = date, m = modified;
+    return d != null && m != null && m.difference(d) > const Duration(hours: 3);
+  }
+
   /// Shows the last-edited day (falls back to the publish day).
   String get dateLabel {
     final d = modified ?? date;
@@ -149,6 +155,42 @@ class FeedRepository {
     final perPage = int.tryParse(q['per_page'] ?? '') ?? 6;
     q['per_page'] = perPage.clamp(1, 20).toString();
     return uri.replace(queryParameters: q).toString();
+  }
+
+  /// A saved copy (up to 24 h old) available instantly, or null. Lets screens
+  /// draw at once and refresh quietly in the background.
+  FeedResult? peek(String url) {
+    if (!SafeUrl.isAllowed(url)) return null;
+    final saved = _cache.get('feed:${normalizeUrl(url)}', maxAge: staleLimit);
+    if (saved == null) return null;
+    try {
+      return FeedResult(parseFeed(saved));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// True when a saved copy is new enough to need no network call.
+  bool isFresh(String url) =>
+      SafeUrl.isAllowed(url) &&
+      _cache.get('feed:${normalizeUrl(url)}', maxAge: freshFor) != null;
+
+  /// Small cached download (for example a category list). Returns the saved
+  /// copy if the network fails, or null.
+  Future<String?> getText(String url, {Duration maxAge = const Duration(days: 7)}) async {
+    if (!SafeUrl.isAllowed(url)) return null;
+    final key = 'txt:$url';
+    final fresh = _cache.get(key, maxAge: maxAge);
+    if (fresh != null) return fresh;
+    try {
+      final r = await _client.get(Uri.parse(url)).timeout(Endpoints.requestTimeout);
+      if (r.statusCode == 200) {
+        final body = utf8.decode(r.bodyBytes, allowMalformed: true);
+        await _cache.put(key, body);
+        return body;
+      }
+    } catch (_) {/* use the saved copy */}
+    return _cache.read(key)?.payload;
   }
 
   Future<FeedResult> load(String url, {bool force = false}) async {

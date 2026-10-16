@@ -8,6 +8,7 @@ import '../../widgets/page_body.dart';
 import '../../widgets/tr.dart';
 import '../../widgets/website_card.dart';
 import '../account/account_widgets.dart';
+import '../tools/tool_style.dart';
 import '../home/section_header.dart';
 import 'countdown_screen.dart';
 import 'favorites_screen.dart';
@@ -64,7 +65,7 @@ class StudyHubScreen extends StatelessWidget {
                         child: Card(
                           elevation: 0,
                           margin: EdgeInsets.zero,
-                          color: scheme.surfaceContainerLow,
+                          color: toolCardTint(toolAccent(tool.$1.of('en')), scheme.surface, dark: Theme.of(context).brightness == Brightness.dark),
                           clipBehavior: Clip.antiAlias,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(18),
@@ -82,8 +83,15 @@ class StudyHubScreen extends StatelessWidget {
                                   Container(
                                     width: 40,
                                     height: 40,
-                                    decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(12)),
-                                    child: Icon(tool.$2, color: scheme.onPrimaryContainer),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [toolAccent(tool.$1.of('en')), Color.alphaBlend(Colors.black.withAlpha(50), toolAccent(tool.$1.of('en')))],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(tool.$2, color: Colors.white),
                                   ),
                                   const SizedBox(height: 10),
                                   Text(

@@ -4,7 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app/core/app_services.dart';
+import 'package:app/core/auth/auth_backend.dart';
 import 'package:app/core/auth/auth_controller.dart';
+import 'package:app/core/config/admin_controller.dart';
+import 'package:app/core/config/control_backend.dart';
 import 'package:app/core/auth/cloud_sync.dart';
 import 'package:app/core/cache/cache_store.dart';
 import 'package:app/core/config/config_controller.dart';
@@ -26,18 +29,24 @@ import 'fakes/fake_auth_backend.dart';
 
 const _appId = '12345678-1234-1234-1234-123456789abc';
 
-Future<(AppServices, PushController)> _services({required bool withPush}) async {
+Future<(AppServices, PushController)> _services({required bool withPush, bool owner = false}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final cache = CacheStore(prefs);
-  final auth = AuthController.ready(FakeAuthBackend(configured: true));
+  final auth = AuthController.ready(FakeAuthBackend(
+    configured: true,
+    start: owner ? const AppUser(uid: 'owner1', name: 'Owner', email: 'o@x.com') : null,
+  ));
+  await auth.init();
+  final config = ConfigController(cache);
   final settings = await SettingsController.load();
   final layout = HomeLayoutController.load(prefs);
   final push = PushController(prefs, backend: _backend);
   final services = AppServices(
     settings: settings,
     cache: cache,
-    config: ConfigController(cache),
+    config: config,
+    admin: AdminController(auth: auth, backend: MemoryControlBackend(admins: {'owner1'}), config: config),
     feeds: FeedRepository(cache),
     layout: layout,
     rates: RateService(cache: cache, prefs: prefs),
@@ -48,7 +57,7 @@ Future<(AppServices, PushController)> _services({required bool withPush}) async 
     groups: GroupsHub(auth, MemoryGroupBackend.new),
     push: withPush ? push : null,
   );
-  await services.auth.init();
+  await Future<void>.delayed(Duration.zero);
   return (services, push);
 }
 
@@ -71,12 +80,20 @@ Widget _host(AppServices services) => AppScope(
 void main() {
   setUp(() => _backend = MemoryPushBackend());
 
-  testWidgets('shows a plain note until alerts are set up', (tester) async {
+  testWidgets('students see nothing until alerts are set up', (tester) async {
     final (services, _) = await _services(withPush: true);
     await tester.pumpWidget(_host(services));
-    expect(find.text('Job alerts'), findsOneWidget);
+    expect(find.text('Job alerts'), findsNothing);
     expect(find.byType(Switch), findsNothing);
-    expect(find.textContaining('not switched on yet'), findsOneWidget);
+  });
+
+  testWidgets('the owner gets a hint what is missing', (tester) async {
+    final (services, _) = await _services(withPush: true, owner: true);
+    await tester.pumpWidget(_host(services));
+    await tester.pump();
+    expect(find.text('Job alerts'), findsOneWidget);
+    expect(find.textContaining('OneSignal App ID'), findsOneWidget);
+    expect(find.byType(Switch), findsNothing);
   });
 
   testWidgets('shows the switch once alerts are available and it turns them off', (tester) async {
@@ -96,6 +113,6 @@ void main() {
     final (services, _) = await _services(withPush: false);
     await tester.pumpWidget(_host(services));
     expect(find.byType(Switch), findsNothing);
-    expect(find.text('Job alerts'), findsOneWidget);
+    expect(find.text('Job alerts'), findsNothing);
   });
 }

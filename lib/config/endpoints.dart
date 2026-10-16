@@ -6,6 +6,9 @@ class Endpoints {
   static const String configUrl =
       'https://saralbook.com/wp-json/saralbook/v1/config';
 
+  /// Our own job website. The Jobs tab reads its categories straight from here.
+  static const String examJobAlertBase = 'https://examjobalert.com';
+
   /// Default Home feeds (standard WordPress REST API, no plugin needed).
   static const String examJobAlertPosts =
       'https://examjobalert.com/wp-json/wp/v2/posts?per_page=6';

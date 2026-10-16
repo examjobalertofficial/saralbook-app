@@ -20,6 +20,7 @@ import 'expense/expense_home_screen.dart';
 import 'groups/groups_home_screen.dart';
 import 'study/favorites_screen.dart';
 import 'home/customize_screen.dart';
+import 'tools/tool_style.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -52,7 +53,15 @@ class MoreScreen extends StatelessWidget {
     Widget tile(IconData icon, String title, VoidCallback onTap,
         {String? subtitle}) {
       return ListTile(
-        leading: Icon(icon, color: scheme.primary),
+        leading: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: toolAccent(title).withAlpha(36),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: toolAccent(title), size: 22),
+        ),
         title: Text(title),
         subtitle: subtitle == null ? null : Text(subtitle),
         trailing: const Icon(Icons.chevron_right_rounded),
