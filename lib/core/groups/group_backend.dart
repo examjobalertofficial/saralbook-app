@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -55,15 +54,6 @@ abstract class GroupBackend {
   Future<void> leaveGroup({required String gid, required String uid, required GroupActivity activity});
 
   Future<void> removeMember({required String gid, required String uid, required GroupActivity activity});
-
-  /// Adds a person who has no account (they are only a name in the group).
-  Future<void> addManualMember({required String gid, required GroupMember member, required GroupActivity activity});
-
-  Future<void> removeManualMember({required String gid, required String uid, required GroupActivity activity});
-
-  /// Deletes the whole group with all its bills, payments, chat and history.
-  /// Owner only. Cannot be undone.
-  Future<void> deleteGroup({required String gid, required String inviteCode, required String ownerUid});
 
   /// Changes only the given fields of the group (name, icon, colour, status, budget).
   Future<void> updateGroup(String gid, Json fields, GroupActivity? activity);
@@ -197,55 +187,6 @@ class FirestoreGroupBackend implements GroupBackend {
   @override
   Future<void> removeMember({required String gid, required String uid, required GroupActivity activity}) =>
       leaveGroup(gid: gid, uid: uid, activity: activity);
-
-  @override
-  Future<void> addManualMember({required String gid, required GroupMember member, required GroupActivity activity}) {
-    final b = _db.batch();
-    b.set(_g(gid).collection('members').doc(member.uid), member.toMap());
-    _log(b, gid, activity);
-    return b.commit();
-  }
-
-  @override
-  Future<void> removeManualMember({required String gid, required String uid, required GroupActivity activity}) {
-    final b = _db.batch();
-    b.delete(_g(gid).collection('members').doc(uid));
-    _log(b, gid, activity);
-    return b.commit();
-  }
-
-  @override
-  Future<void> deleteGroup({required String gid, required String inviteCode, required String ownerUid}) async {
-    // Firestore does not delete the inside of a document by itself: empty each
-    // folder first (small batches), and remove the group itself last.
-    Future<void> wipe(String name, {String? except}) async {
-      final snap = await _g(gid).collection(name).get();
-      final refs = [
-        for (final d in snap.docs)
-          if (d.id != except) d.reference,
-      ];
-      for (var i = 0; i < refs.length; i += 200) {
-        final b = _db.batch();
-        for (final r in refs.sublist(i, math.min(i + 200, refs.length))) {
-          b.delete(r);
-        }
-        await b.commit();
-      }
-    }
-
-    await wipe('expenses');
-    await wipe('settlements');
-    await wipe('messages');
-    await wipe('activity');
-    await wipe('members', except: ownerUid);
-    try {
-      await _invite(inviteCode).delete(); // may not exist: that is fine
-    } catch (_) {}
-    final b = _db.batch();
-    b.delete(_g(gid).collection('members').doc(ownerUid));
-    b.delete(_g(gid));
-    await b.commit();
-  }
 
   @override
   Future<void> updateGroup(String gid, Json fields, GroupActivity? activity) {
@@ -451,32 +392,6 @@ class MemoryGroupBackend implements GroupBackend {
   @override
   Future<void> removeMember({required String gid, required String uid, required GroupActivity activity}) =>
       leaveGroup(gid: gid, uid: uid, activity: activity);
-
-  @override
-  Future<void> addManualMember({required String gid, required GroupMember member, required GroupActivity activity}) async {
-    (members[gid] ??= {})[member.uid] = member.toMap();
-    _log(gid, activity);
-    _emit();
-  }
-
-  @override
-  Future<void> removeManualMember({required String gid, required String uid, required GroupActivity activity}) async {
-    members[gid]?.remove(uid);
-    _log(gid, activity);
-    _emit();
-  }
-
-  @override
-  Future<void> deleteGroup({required String gid, required String inviteCode, required String ownerUid}) async {
-    groups.remove(gid);
-    members.remove(gid);
-    expenses.remove(gid);
-    settlements.remove(gid);
-    activity.remove(gid);
-    messages.remove(gid);
-    invites.remove(inviteCode);
-    _emit();
-  }
 
   @override
   Future<void> updateGroup(String gid, Json fields, GroupActivity? activity) async {

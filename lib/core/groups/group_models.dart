@@ -160,13 +160,6 @@ class GroupMember {
   /// Time (ms) up to which this person has read the group chat.
   final int lastReadAt;
 
-  /// A person added by hand who does not use the app (no account). Their id
-  /// starts with `p_`. They can be in bills and settlements but never sign in.
-  final bool manual;
-
-  /// Who added a [manual] person (account id).
-  final String addedBy;
-
   const GroupMember({
     required this.uid,
     required this.name,
@@ -175,19 +168,7 @@ class GroupMember {
     required this.joinedAt,
     this.inviteCode = '',
     this.lastReadAt = 0,
-    this.manual = false,
-    this.addedBy = '',
   });
-
-  /// A new person without an account.
-  factory GroupMember.manualPerson({required String name, required String addedBy, int? now}) => GroupMember(
-        uid: 'p_${newId()}',
-        name: name.trim(),
-        role: GroupRole.member,
-        joinedAt: now ?? DateTime.now().millisecondsSinceEpoch,
-        manual: true,
-        addedBy: addedBy,
-      );
 
   String get initial => name.trim().isEmpty ? '?' : name.trim().substring(0, 1).toUpperCase();
 
@@ -199,8 +180,6 @@ class GroupMember {
         joinedAt: joinedAt,
         inviteCode: inviteCode,
         lastReadAt: lastReadAt,
-        manual: manual,
-        addedBy: addedBy,
       );
 
   Json toMap() => {
@@ -209,8 +188,6 @@ class GroupMember {
         'role': role.name,
         'joinedAt': joinedAt,
         if (inviteCode.isNotEmpty) 'inviteCode': inviteCode,
-        if (manual) 'manual': true,
-        if (manual) 'addedBy': addedBy,
       };
 
   static GroupMember? fromMap(Json m) {
@@ -225,8 +202,6 @@ class GroupMember {
       joinedAt: _i(m['joinedAt']),
       inviteCode: _s(m['inviteCode'], 20),
       lastReadAt: _i(m['lastReadAt']),
-      manual: m['manual'] == true,
-      addedBy: _s(m['addedBy'], 128),
     );
   }
 }
@@ -495,7 +470,7 @@ class GroupSettlement {
 }
 
 /// What happened in the group (kept as data, the screen turns it into words).
-/// Types: group_created, member_joined, member_added, member_left, member_removed, role_changed,
+/// Types: group_created, member_joined, member_left, member_removed, role_changed,
 /// expense_added, expense_edited, expense_deleted, settlement_paid, settlement_confirmed,
 /// settlement_cancelled, group_archived, group_restored, group_renamed, budget_changed, code_reset.
 class GroupActivity {

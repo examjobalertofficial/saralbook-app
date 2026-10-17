@@ -85,7 +85,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
   static final LText _tabActivity = t('Activity', 'गतिविधि');
   static final LText _tabChat = t('Chat', 'चैट');
   static final LText _add = t('Add expense', 'खर्च जोड़ें');
-  static final LText _gone = t('This group is not available any more (you left it or it was deleted).', 'यह ग्रुप अब उपलब्ध नहीं है (आपने छोड़ा या इसे हटा दिया गया)।');
+  static final LText _gone = t('You are no longer in this group.', 'आप अब इस ग्रुप में नहीं हैं।');
 
   @override
   void initState() {
@@ -250,8 +250,6 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
             _export();
           case 'archive':
             _toggleArchive(g);
-          case 'delete':
-            _deleteGroup(g);
         }
       },
       itemBuilder: (_) => [
@@ -259,14 +257,6 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
         if (admin) PopupMenuItem(value: 'edit', child: Text(tr(context, t('Rename / icon / colour', 'नाम / आइकन / रंग बदलें')))),
         if (admin && !g.archived) PopupMenuItem(value: 'budget', child: Text(tr(context, t('Group budget', 'ग्रुप बजट')))),
         if (admin) PopupMenuItem(value: 'archive', child: Text(tr(context, g.archived ? t('Restore group', 'ग्रुप वापस लाएं') : t('Archive group', 'ग्रुप आर्काइव करें')))),
-        if (_session.myRole == GroupRole.owner)
-          PopupMenuItem(
-            value: 'delete',
-            child: Text(
-              tr(context, t('Delete group', 'ग्रुप हमेशा के लिए हटाएं')),
-              style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.w700),
-            ),
-          ),
       ],
     );
   }
@@ -283,63 +273,6 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
       t('Archive', 'आर्काइव करें'),
     );
     if (ok) _session.setArchived(true);
-  }
-
-  /// Owner only. The owner has to type the group's name, so it cannot happen by accident.
-  Future<void> _deleteGroup(ExpenseGroup g) async {
-    final c = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) {
-          final matches = c.text.trim().toLowerCase() == g.name.trim().toLowerCase();
-          return AlertDialog(
-            title: Text(tr(ctx, t('Delete this group for ever?', 'यह ग्रुप हमेशा के लिए हटाएं?'))),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(tr(
-                  ctx,
-                  t(
-                    'All bills, payments, chat and history of "${g.name}" are deleted for every member. This cannot be undone. '
-                        'Tip: "Archive" keeps everything and only stops changes. Export the bills first if you need them.',
-                    '"${g.name}" के सभी बिल, भुगतान, चैट और इतिहास सभी सदस्यों के लिए हट जाएंगे। इसे वापस नहीं लाया जा सकता। '
-                        'सुझाव: "आर्काइव" सब कुछ सुरक्षित रखता है और बस बदलाव रोकता है। ज़रूरत हो तो पहले बिल एक्सपोर्ट करें।',
-                  ),
-                )),
-                const SizedBox(height: 12),
-                Text(tr(ctx, t('Type the group name to confirm:', 'पक्का करने के लिए ग्रुप का नाम लिखें:')), style: const TextStyle(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: c,
-                  autofocus: true,
-                  onChanged: (_) => setLocal(() {}),
-                  decoration: InputDecoration(border: const OutlineInputBorder(), hintText: g.name),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(tr(ctx, t('Cancel', 'रद्द करें')))),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
-                onPressed: matches ? () => Navigator.of(ctx).pop(true) : null,
-                child: Text(tr(ctx, t('Delete for ever', 'हमेशा के लिए हटाएं'))),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-    c.dispose();
-    if (ok != true || !mounted) return;
-    final done = await _session.deleteGroup();
-    if (!mounted) return;
-    if (done) {
-      Navigator.of(context).pop();
-    } else {
-      showSnack(context, t('Could not delete the group. Check your internet and try again.', 'ग्रुप नहीं हट सका। इंटरनेट जांचकर दोबारा कोशिश करें।'), error: true);
-    }
   }
 
   void _editGroup(ExpenseGroup g) {
@@ -657,9 +590,7 @@ class _BalancesTab extends StatelessWidget {
       context,
       iPay
           ? t('How much did you pay ${session.nameOf(tf.to)}?', '${session.nameOf(tf.to)} को कितना दिया?')
-          : tf.to == me
-              ? t('How much did ${session.nameOf(tf.from)} pay you?', '${session.nameOf(tf.from)} ने कितना दिया?')
-              : t('How much did ${session.nameOf(tf.from)} pay ${session.nameOf(tf.to)}?', '${session.nameOf(tf.from)} ने ${session.nameOf(tf.to)} को कितना दिया?'),
+          : t('How much did ${session.nameOf(tf.from)} pay you?', '${session.nameOf(tf.from)} ने कितना दिया?'),
       tf.amountMinor,
     );
     if (amount == null) return;
@@ -719,20 +650,13 @@ class _BalancesTab extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(formatInr(tf.amountMinor), style: const TextStyle(fontWeight: FontWeight.w800)),
-                  if (canAct && (tf.from == me || tf.to == me || (session.memberById(tf.from)?.manual ?? false) || (session.memberById(tf.to)?.manual ?? false)))
+                  if (canAct && (tf.from == me || tf.to == me))
                     SizedBox(
                       height: 28,
                       child: TextButton(
                         style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 28)),
                         onPressed: () => _pay(context, tf),
-                        child: Text(tr(
-                          context,
-                          tf.from == me
-                              ? t('I paid', 'मैंने दे दिया')
-                              : tf.to == me
-                                  ? t('Received', 'मिल गया')
-                                  : t('Mark paid', 'चुकता दर्ज करें'),
-                        )),
+                        child: Text(tr(context, tf.from == me ? t('I paid', 'मैंने दे दिया') : t('Received', 'मिल गया'))),
                       ),
                     ),
                 ],
@@ -816,102 +740,8 @@ class _MembersTab extends StatelessWidget {
     }
   }
 
-  Future<void> _addManual(BuildContext context) async {
-    final c = TextEditingController();
-    final name = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(tr(ctx, t('Add a member by name', 'नाम से सदस्य जोड़ें'))),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: c,
-              autofocus: true,
-              maxLength: 60,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(border: const OutlineInputBorder(), labelText: tr(ctx, t('Name', 'नाम'))),
-              onSubmitted: (v) => Navigator.of(ctx).pop(v),
-            ),
-            Text(
-              tr(
-                ctx,
-                t('For a friend who does not use the app. You can put bills and payments on their name.',
-                    'उस दोस्त के लिए जो ऐप नहीं चलाता। आप उनके नाम पर बिल और भुगतान दर्ज कर सकते हैं।'),
-              ),
-              style: TextStyle(color: Theme.of(ctx).colorScheme.onSurfaceVariant, fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(tr(ctx, t('Cancel', 'रद्द करें')))),
-          FilledButton(onPressed: () => Navigator.of(ctx).pop(c.text), child: Text(tr(ctx, t('Add', 'जोड़ें')))),
-        ],
-      ),
-    );
-    c.dispose();
-    if (name == null || !context.mounted) return;
-    final problem = session.addManualMember(name);
-    if (problem == null) {
-      showSnack(context, t('Member added', 'सदस्य जुड़ गया'));
-      return;
-    }
-    showSnack(
-      context,
-      switch (problem) {
-        'same_name' => t('Someone with this name is already in the group. Use a different name.', 'इस नाम का कोई पहले से ग्रुप में है। दूसरा नाम लिखें।'),
-        'archived' => t('This group is archived.', 'यह ग्रुप आर्काइव है।'),
-        'long' => t('The name is too long.', 'नाम बहुत लंबा है।'),
-        _ => t('Please write a name.', 'कृपया नाम लिखें।'),
-      },
-      error: true,
-    );
-  }
-
-  void _manualActions(BuildContext context, GroupMember m) {
-    if (!session.canRemoveManual(m)) return;
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: Text(m.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: Text(tr(ctx, t('Added by hand, no app', 'हाथ से जोड़ा गया, ऐप नहीं'))),
-            ),
-            ListTile(
-              leading: Icon(Icons.person_remove_outlined, color: Theme.of(ctx).colorScheme.error),
-              title: Text(tr(ctx, t('Remove from group', 'ग्रुप से हटाएं')), style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
-              onTap: () async {
-                Navigator.of(ctx).pop();
-                if ((session.net[m.uid] ?? 0) != 0) {
-                  showSnack(context, t('Settle ${m.name}\'s balance first (Balances tab), then remove.', '${m.name} का हिसाब पहले चुकता करें (हिसाब टैब), फिर हटाएं।'), error: true);
-                  return;
-                }
-                final ok = await _confirm(
-                  context,
-                  t('Remove ${m.name}?', '${m.name} को हटाएं?'),
-                  t('Their name will show as "Former member" in old bills.', 'पुराने बिलों में उनका नाम "पूर्व सदस्य" दिखेगा।'),
-                  t('Remove', 'हटाएं'),
-                );
-                if (ok) session.removeManualMember(m);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _memberActions(BuildContext context, GroupMember m) {
     final me = session.me.uid;
-    if (m.manual) {
-      _manualActions(context, m);
-      return;
-    }
     if (m.uid == me || session.isArchived) return;
     final owner = session.myRole == GroupRole.owner;
     final canRemove = canRemoveMember(actor: session.myRole, actorId: me, target: m);
@@ -1046,19 +876,9 @@ class _MembersTab extends StatelessWidget {
             onTap: () => _memberActions(context, m),
             leading: MemberAvatar(member: m),
             title: Text(m.uid == me ? '${m.name} (${tr(context, youLabel)})' : m.name),
-            subtitle: m.manual ? Text(tr(context, t('Added by hand (no app)', 'हाथ से जोड़ा (ऐप नहीं)'))) : null,
             trailing: Chip(
-              label: Text(tr(context, m.manual ? t('No app', 'बिना ऐप') : roleLabel(m.role))),
+              label: Text(tr(context, roleLabel(m.role))),
               visualDensity: VisualDensity.compact,
-            ),
-          ),
-        if (!g.archived)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: FilledButton.tonalIcon(
-              icon: const Icon(Icons.person_add_alt_1_rounded),
-              label: Text(tr(context, t('Add member by name (no app)', 'नाम से सदस्य जोड़ें (बिना ऐप)'))),
-              onPressed: () => _addManual(context),
             ),
           ),
         const SizedBox(height: 12),
@@ -1090,8 +910,6 @@ class _ActivityTab extends StatelessWidget {
         return t('$who created the group', '$who ने ग्रुप बनाया');
       case 'member_joined':
         return t('$who joined', '$who जुड़े');
-      case 'member_added':
-        return t('$who added $s (without the app)', '$who ने $s को जोड़ा (बिना ऐप के)');
       case 'member_left':
         return t('$who left', '$who ने ग्रुप छोड़ा');
       case 'member_removed':
@@ -1129,7 +947,7 @@ class _ActivityTab extends StatelessWidget {
         'expense_added' || 'expense_edited' => Icons.receipt_long_rounded,
         'expense_deleted' => Icons.delete_outline_rounded,
         'settlement_paid' || 'settlement_confirmed' || 'settlement_cancelled' => Icons.payments_outlined,
-        'member_joined' || 'member_added' || 'member_left' || 'member_removed' || 'role_changed' => Icons.person_outline_rounded,
+        'member_joined' || 'member_left' || 'member_removed' || 'role_changed' => Icons.person_outline_rounded,
         _ => Icons.info_outline_rounded,
       };
 

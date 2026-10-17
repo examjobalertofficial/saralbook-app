@@ -65,27 +65,17 @@ class AppServices {
   /// Is the signed-in person an owner/admin? (decided by the cloud, not the app)
   final AdminController admin;
 
-  /// [onStep] reports what is being prepared, so a slow or stuck start-up can
-  /// show where it is (see the start screen in main.dart).
-  static Future<AppServices> create({void Function(String step)? onStep}) async {
-    void step(String s) => onStep?.call(s);
-    step('Opening saved settings');
+  static Future<AppServices> create() async {
     final prefs = await SharedPreferences.getInstance();
-    step('Reading preferences');
     final settings = await SettingsController.load();
     final cache = CacheStore(prefs);
-    step('Preparing sign-in');
     final auth = AuthController.firebase();
     final control = FirestoreControlBackend(auth);
-    step('Reading saved website settings');
     final config = ConfigController(cache, control: control)..loadCached();
     final layout = HomeLayoutController.load(prefs);
-    step('Reading saved exchange rates');
     final rates = RateService(cache: cache, prefs: prefs)..loadCached();
-    step('Starting cloud sync');
     // Keeps theme/language/Home layout in the cloud for signed-in people.
     final sync = CloudProfileSync(auth: auth, settings: settings, layout: layout)..start();
-    step('Almost ready');
     return AppServices(
       settings: settings,
       cache: cache,

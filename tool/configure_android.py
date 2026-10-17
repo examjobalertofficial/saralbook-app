@@ -95,16 +95,3 @@ for name in ("android/app/build.gradle.kts", "android/app/build.gradle"):
     f = pathlib.Path(name)
     if f.exists():
         print(name, "->", re.findall(r'applicationId\s*=?\s*"([^"]+)"', f.read_text()))
-
-
-# Draw with Flutter's long-proven Skia renderer instead of Impeller. Some phones
-# (certain Mali / Adreno graphics drivers) freeze at start-up with Impeller.
-manifest_text = manifest.read_text()
-if "EnableImpeller" not in manifest_text:
-    manifest_text = manifest_text.replace(
-        "</application>",
-        '    <meta-data android:name="io.flutter.embedding.android.EnableImpeller" android:value="false"/>\n    </application>',
-        1,
-    )
-    manifest.write_text(manifest_text)
-print("Impeller switched off in the manifest:", "EnableImpeller" in manifest.read_text())
