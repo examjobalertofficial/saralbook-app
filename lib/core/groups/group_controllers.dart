@@ -39,6 +39,17 @@ class GroupsController extends ChangeNotifier {
     return out;
   }
 
+  /// Deletes a group for everybody (owner only). Returns false if it failed.
+  Future<bool> deleteGroup(ExpenseGroup g) async {
+    if (g.ownerId != me.uid) return false;
+    try {
+      await backend.deleteGroup(gid: g.id, inviteCode: g.inviteCode, ownerUid: me.uid);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   ExpenseGroup? byId(String id) {
     for (final g in _groups) {
       if (g.id == id) return g;
@@ -410,20 +421,57 @@ class GroupSession extends ChangeNotifier {
     if (isArchived || amountMinor < 1 || from == to) return false;
     final iPaid = from == me.uid;
     final iReceived = to == me.uid;
-    if (!iPaid && !iReceived) return false;
+    // A person added by hand has no app to confirm with, so any payment that
+    // involves one counts at once (and any member may note it down).
+    final withManual = (memberById(from)?.manual ?? false) || (memberById(to)?.manual ?? false);
+    if (!iPaid && !iReceived && !withManual) return false;
+    final confirmed = iReceived || withManual;
     final s = GroupSettlement.create(
       from: from,
       to: to,
       amountMinor: amountMinor,
-      status: iReceived ? SettlementStatus.confirmed : SettlementStatus.pending,
+      status: confirmed ? SettlementStatus.confirmed : SettlementStatus.pending,
       note: note,
     );
     _run(groups.backend.saveSettlement(
       gid,
       s,
-      _act(iReceived ? 'settlement_confirmed' : 'settlement_paid', subject: nameOf(iReceived ? from : to), amount: amountMinor),
+      _act(confirmed ? 'settlement_confirmed' : 'settlement_paid', subject: nameOf(iReceived || !iPaid ? from : to), amount: amountMinor),
     ));
     return true;
+  }
+
+  // ---------- people without the app ----------
+
+  /// Adds a person by name. Returns null when done, or why not:
+  /// `empty`, `long`, `same_name`, `archived`.
+  String? addManualMember(String name) {
+    final clean = name.trim();
+    if (isArchived) return 'archived';
+    if (clean.isEmpty) return 'empty';
+    if (clean.length > 60) return 'long';
+    final lower = clean.toLowerCase();
+    if (_members.any((m) => m.name.trim().toLowerCase() == lower)) return 'same_name';
+    final person = GroupMember.manualPerson(name: clean, addedBy: me.uid);
+    _run(groups.backend.addManualMember(gid: gid, member: person, activity: _act('member_added', subject: clean)));
+    return null;
+  }
+
+  /// The owner/admins, or the person who added them, may remove a manual person.
+  bool canRemoveManual(GroupMember m) => m.manual && !isArchived && (iAmAdmin || m.addedBy == me.uid);
+
+  /// Removes a manual person. Only when their balance is zero (else false).
+  bool removeManualMember(GroupMember m) {
+    if (!canRemoveManual(m) || (net[m.uid] ?? 0) != 0) return false;
+    _run(groups.backend.removeManualMember(gid: gid, uid: m.uid, activity: _act('member_removed', subject: m.name)));
+    return true;
+  }
+
+  /// Deletes this whole group for everybody (owner only).
+  Future<bool> deleteGroup() {
+    final g = group;
+    if (g == null) return Future<bool>.value(false);
+    return groups.deleteGroup(g);
   }
 
   bool confirmPayment(GroupSettlement s) {
