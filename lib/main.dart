@@ -47,11 +47,20 @@ class _SaralBookAppState extends State<SaralBookApp> {
     unawaited(_listenForLinks());
     unawaited(_readBuildNumber());
     widget.services.config.addListener(_syncPush);
-    _syncPush();
+    // Push notifications start a few seconds AFTER the app is on screen, so a
+    // slow phone never waits for them while opening.
+    _pushTimer = Timer(const Duration(seconds: 5), () {
+      _pushReady = true;
+      _syncPush();
+    });
   }
+
+  Timer? _pushTimer;
+  bool _pushReady = false;
 
   /// Starts push notifications as soon as the website settings carry an App ID.
   void _syncPush() {
+    if (!_pushReady) return;
     final push = widget.services.push;
     final id = widget.services.config.pushAppId;
     if (push != null && id.isNotEmpty) unawaited(push.configure(id));
@@ -108,6 +117,7 @@ class _SaralBookAppState extends State<SaralBookApp> {
 
   @override
   void dispose() {
+    _pushTimer?.cancel();
     widget.services.config.removeListener(_syncPush);
     _linkSub?.cancel();
     _router.dispose();
