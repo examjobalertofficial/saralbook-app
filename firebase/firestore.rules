@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// SaralBook - Firestore security rules (Phase 11: personal data + group expenses + owner switches).
+// SaralBook - Firestore security rules (Phase 11+: personal data + group expenses incl. by-hand members and group delete + owner switches).
 // Rule of thumb: a signed-in person can only touch their own data, and a group's
 // data only if they are a member of that group.
 service cloud.firestore {
@@ -60,6 +60,10 @@ service cloud.firestore {
       return isMember(gid) && roleOf(gid) in ['owner', 'admin'];
     }
 
+    function isGroupOwner(gid) {
+      return signedIn() && get(groupPath(gid)).data.ownerId == request.auth.uid;
+    }
+
     function groupActive(gid) {
       return get(groupPath(gid)).data.status == 'active';
     }
@@ -109,22 +113,33 @@ service cloud.firestore {
           && getAfter(memberPath(gid, request.auth.uid)).data.inviteCode == resource.data.inviteCode)
       );
 
-      // groups are archived, never deleted (keeps everybody's history safe)
-      allow delete: if false;
+      // Only the owner may delete a group (the app empties its folders first).
+      // "Archive" is the gentle option that keeps everything.
+      allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
 
       match /members/{mid} {
         allow read: if isMember(gid);
 
-        allow create: if signedIn() && mid == request.auth.uid
-          && request.resource.data.name is string && request.resource.data.name.size() <= 60
+        allow create: if signedIn()
+          && request.resource.data.name is string && request.resource.data.name.size() >= 1
+          && request.resource.data.name.size() <= 60
           && request.resource.data.size() <= 10
           && (
-            (request.resource.data.role == 'owner'
-              && getAfter(groupPath(gid)).data.ownerId == request.auth.uid
-              && getAfter(groupPath(gid)).data.memberIds == [request.auth.uid])
-            || (request.resource.data.role == 'member'
-              && request.resource.data.inviteCode == get(groupPath(gid)).data.inviteCode
-              && get(groupPath(gid)).data.status == 'active')
+            (mid == request.auth.uid && (
+              (request.resource.data.role == 'owner'
+                && getAfter(groupPath(gid)).data.ownerId == request.auth.uid
+                && getAfter(groupPath(gid)).data.memberIds == [request.auth.uid])
+              || (request.resource.data.role == 'member'
+                && request.resource.data.inviteCode == get(groupPath(gid)).data.inviteCode
+                && get(groupPath(gid)).data.status == 'active')
+            ))
+            // a person added by hand (no account): any member may add one, id starts with p_
+            || (mid.matches('p_.*')
+              && request.resource.data.manual == true
+              && request.resource.data.role == 'member'
+              && request.resource.data.addedBy == request.auth.uid
+              && request.resource.data.keys().hasOnly(['name', 'photoUrl', 'role', 'joinedAt', 'manual', 'addedBy'])
+              && isMember(gid) && groupActive(gid))
           );
 
         allow update: if isMember(gid) && (
@@ -141,6 +156,10 @@ service cloud.firestore {
           (mid == request.auth.uid && resource.data.role != 'owner')
           || (roleOf(gid) == 'owner' && resource.data.role != 'owner')
           || (roleOf(gid) == 'admin' && resource.data.role == 'member')
+          // the person who added a by-hand member may remove them
+          || (resource.data.get('manual', false) == true && resource.data.get('addedBy', '') == request.auth.uid && groupActive(gid))
+          // the owner removing their own entry as the last step of deleting the group
+          || (mid == request.auth.uid && isGroupOwner(gid))
         );
       }
 
@@ -160,23 +179,28 @@ service cloud.firestore {
           && request.resource.data.version == resource.data.version + 1
           && validExpense(request.resource.data);
 
-        allow delete: if isMember(gid) && groupActive(gid)
-          && (resource.data.createdBy == request.auth.uid || isAdmin(gid));
+        allow delete: if (isMember(gid) && groupActive(gid)
+          && (resource.data.createdBy == request.auth.uid || isAdmin(gid)))
+          || isGroupOwner(gid);
       }
 
       match /settlements/{sid} {
         allow read: if isMember(gid);
 
-        // the payer notes "I paid" (pending) or the receiver notes "I received" (confirmed)
+        // the payer notes "I paid" (pending) or the receiver notes "I received" (confirmed).
+        // A by-hand member has no app to confirm with, so a payment with one is "confirmed" at once.
         allow create: if isMember(gid) && groupActive(gid)
           && request.resource.data.amountMinor is int && request.resource.data.amountMinor > 0
           && request.resource.data.from != request.resource.data.to
-          && request.resource.data.from in get(groupPath(gid)).data.memberIds
-          && request.resource.data.to in get(groupPath(gid)).data.memberIds
+          && exists(memberPath(gid, request.resource.data.from))
+          && exists(memberPath(gid, request.resource.data.to))
           && request.resource.data.size() <= 10
           && (
             (request.resource.data.from == request.auth.uid && request.resource.data.status == 'pending')
             || (request.resource.data.to == request.auth.uid && request.resource.data.status == 'confirmed')
+            || (request.resource.data.status == 'confirmed'
+              && (get(memberPath(gid, request.resource.data.from)).data.get('manual', false) == true
+                || get(memberPath(gid, request.resource.data.to)).data.get('manual', false) == true))
           );
 
         // only the receiver can confirm
@@ -186,9 +210,10 @@ service cloud.firestore {
           && resource.data.to == request.auth.uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'confirmedAt']);
 
-        allow delete: if isMember(gid) && groupActive(gid)
+        allow delete: if (isMember(gid) && groupActive(gid)
           && ((resource.data.status == 'pending' && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid))
-              || isAdmin(gid));
+              || isAdmin(gid)))
+          || isGroupOwner(gid);
       }
 
       // group chat (text only). Deleting just blanks the text.
@@ -205,7 +230,7 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleted', 'text'])
           && request.resource.data.deleted == true
           && request.resource.data.text == '';
-        allow delete: if false;
+        allow delete: if isGroupOwner(gid); // only when the whole group is deleted
       }
 
       match /activity/{aid} {
@@ -214,7 +239,8 @@ service cloud.firestore {
           && request.resource.data.actorId == request.auth.uid
           && request.resource.data.type is string
           && request.resource.data.size() <= 10;
-        allow update, delete: if false;
+        allow update: if false;
+        allow delete: if isGroupOwner(gid); // only when the whole group is deleted
       }
     }
 

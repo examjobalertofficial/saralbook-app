@@ -1,7 +1,7 @@
 name: app
 description: SaralBook - all SaralBook platforms in one app.
 publish_to: 'none'
-version: 2.1.0+19
+version: 2.1.1+20
 
 environment:
   sdk: ^3.5.0
