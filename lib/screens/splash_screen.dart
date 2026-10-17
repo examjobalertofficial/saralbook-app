@@ -19,8 +19,9 @@ final List<LText> splashQuotes = [
   t('Believe in yourself. Your government job is waiting.', 'खुद पर भरोसा रखिए, आपकी सरकारी नौकरी इंतज़ार में है।'),
 ];
 
-/// Start-up screen: the logo pops in with a glow, "Welcome to SaralBook" fades
-/// up, then a quote. Tap anywhere to skip. Pure Flutter animation (no extra files).
+/// Start-up screen: logo, "Welcome to SaralBook" and a quote, each fading in.
+/// Deliberately light (no blur or glow effects) so it starts instantly even on
+/// slow phones. Tap anywhere to skip.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -29,29 +30,31 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 2600),
-  )..forward();
-  late final LText _quote = splashQuotes[math.Random().nextInt(splashQuotes.length)];
+  late final AnimationController _c;
+  late final Animation<double> _logo;
+  late final Animation<double> _welcome;
+  late final Animation<double> _quoteIn;
+  late final LText _quote;
   Timer? _timer;
-
-  Animation<double> _in(double from, double to, [Curve curve = Curves.easeOutCubic]) =>
-      CurvedAnimation(parent: _c, curve: Interval(from, to, curve: curve));
-
-  late final Animation<double> _logo = _in(0.0, 0.40, Curves.easeOutBack);
-  late final Animation<double> _welcome = _in(0.30, 0.58);
-  late final Animation<double> _name = _in(0.42, 0.70);
-  late final Animation<double> _quoteIn = _in(0.60, 0.90);
+  bool _left = false;
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer(const Duration(milliseconds: 3000), _go);
+    _quote = splashQuotes[math.Random().nextInt(splashQuotes.length)];
+    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
+    Animation<double> step(double a, double b) =>
+        CurvedAnimation(parent: _c, curve: Interval(a, b, curve: Curves.easeOut));
+    _logo = step(0.0, 0.45);
+    _welcome = step(0.30, 0.70);
+    _quoteIn = step(0.55, 1.0);
+    _c.forward();
+    _timer = Timer(const Duration(milliseconds: 2600), _go);
   }
 
   void _go() {
-    if (!mounted) return;
+    if (!mounted || _left) return;
+    _left = true;
     _timer?.cancel();
     context.go(AppRoutes.home);
   }
@@ -63,23 +66,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     super.dispose();
   }
 
-  Widget _fadeUp(Animation<double> a, Widget child, {double dy = 16}) => AnimatedBuilder(
-        animation: a,
-        builder: (context, child) => Opacity(
-          opacity: a.value.clamp(0.0, 1.0),
-          child: Transform.translate(offset: Offset(0, (1 - a.value) * dy), child: child),
-        ),
-        child: child,
-      );
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF1E3A8A),
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _go,
-        child: Container(
-          width: double.infinity,
+        child: DecoratedBox(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [Color(0xFF1E5AA8), Color(0xFF7048E8), Color(0xFFD6336C)],
@@ -87,91 +81,54 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               end: Alignment.bottomRight,
             ),
           ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                const Spacer(flex: 3),
-                AnimatedBuilder(
-                  animation: _c,
-                  builder: (context, _) {
-                    final pop = _logo.value.clamp(0.0, 1.2);
-                    final pulse = 1 + 0.05 * math.sin(_c.value * math.pi * 4) * _c.value;
-                    return Transform.scale(
-                      scale: pop * pulse,
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withAlpha(40),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.white.withAlpha((90 * _logo.value.clamp(0.0, 1.0)).round()),
-                              blurRadius: 40,
-                              spreadRadius: 6,
-                            ),
-                          ],
-                        ),
-                        child: const BrandLogo(size: 104),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 30),
-                _fadeUp(
-                  _welcome,
-                  Text(
-                    tr(context, t('Welcome to', 'आपका स्वागत है')),
-                    style: const TextStyle(color: Colors.white70, fontSize: 18, letterSpacing: 1.5),
+          child: SizedBox.expand(
+            child: SafeArea(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FadeTransition(
+                    opacity: _logo,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.7, end: 1.0).animate(_logo),
+                      child: const BrandLogo(size: 110),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                _fadeUp(
-                  _name,
-                  const Text(
-                    'SaralBook',
-                    style: TextStyle(color: Colors.white, fontSize: 38, fontWeight: FontWeight.w800),
-                  ),
-                ),
-                const Spacer(flex: 2),
-                _fadeUp(
-                  _quoteIn,
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 36),
+                  const SizedBox(height: 28),
+                  FadeTransition(
+                    opacity: _welcome,
                     child: Column(
                       children: [
-                        const Icon(Icons.format_quote_rounded, color: Colors.white54, size: 30),
                         Text(
-                          tr(context, _quote),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontStyle: FontStyle.italic,
-                            height: 1.4,
-                          ),
+                          tr(context, t('Welcome to', 'आपका स्वागत है')),
+                          style: const TextStyle(color: Colors.white70, fontSize: 18),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'SaralBook',
+                          style: TextStyle(color: Colors.white, fontSize: 38, fontWeight: FontWeight.w800),
                         ),
                       ],
                     ),
                   ),
-                  dy: 10,
-                ),
-                const Spacer(flex: 2),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(60, 0, 60, 36),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: AnimatedBuilder(
-                      animation: _c,
-                      builder: (context, _) => LinearProgressIndicator(
-                        value: _c.value,
-                        minHeight: 4,
-                        backgroundColor: Colors.white24,
-                        valueColor: const AlwaysStoppedAnimation(Colors.white),
+                  const SizedBox(height: 36),
+                  FadeTransition(
+                    opacity: _quoteIn,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 36),
+                      child: Text(
+                        '“${tr(context, _quote)}”',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontStyle: FontStyle.italic,
+                          height: 1.4,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
