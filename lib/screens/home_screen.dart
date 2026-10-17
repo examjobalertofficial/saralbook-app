@@ -13,6 +13,7 @@ import '../widgets/animations.dart';
 import '../widgets/brand_logo.dart';
 import '../widgets/page_body.dart';
 import '../widgets/tr.dart';
+import '../widgets/youtube_card.dart';
 import 'update_required_screen.dart';
 import 'home/customize_screen.dart';
 import 'home/expense_section.dart';
@@ -106,6 +107,10 @@ class HomeScreen extends StatelessWidget {
                           child: _section(context, sections[i], config, lang),
                         ),
                       ),
+                    ),
+                    const SliverPadding(
+                      padding: EdgeInsets.fromLTRB(16, 0, 16, 28),
+                      sliver: SliverToBoxAdapter(child: YoutubeCard()),
                     ),
                   ],
                 ),

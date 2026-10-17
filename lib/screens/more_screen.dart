@@ -12,6 +12,7 @@ import '../widgets/brand_logo.dart';
 import '../widgets/page_body.dart';
 import '../core/l10n/ltext.dart';
 import '../widgets/tr.dart';
+import '../widgets/youtube_card.dart';
 import 'account/account_data_screen.dart';
 import 'admin/admin_screen.dart';
 import 'account/cloud_check_screen.dart';
@@ -179,6 +180,12 @@ class MoreScreen extends StatelessWidget {
               () => Navigator.of(context, rootNavigator: true).push(
                 MaterialPageRoute<void>(builder: (_) => const FavoritesScreen()),
               ),
+            ),
+            tile(
+              Icons.smart_display_rounded,
+              tr(context, t('Our YouTube channel', 'हमारा YouTube चैनल')),
+              openYoutubeChannel,
+              subtitle: tr(context, t('Free classes, tips and exam updates', 'फ्री क्लास, टिप्स और परीक्षा अपडेट')),
             ),
             tile(
               Icons.manage_accounts_outlined,

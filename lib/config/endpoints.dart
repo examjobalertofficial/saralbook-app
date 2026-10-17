@@ -8,6 +8,7 @@ class Endpoints {
 
   /// Our own job website. The Jobs tab reads its categories straight from here.
   static const String examJobAlertBase = 'https://examjobalert.com';
+  static const String saralBookBase = 'https://saralbook.com';
 
   /// Default Home feeds (standard WordPress REST API, no plugin needed).
   static const String examJobAlertPosts =

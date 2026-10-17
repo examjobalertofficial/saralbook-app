@@ -9,6 +9,7 @@ import 'files/image_screens.dart';
 import 'files/pdf_screens.dart';
 import '../resume/resume_maker_screen.dart';
 import 'pomodoro_screen.dart';
+import 'scientific_calculator_screen.dart';
 import 'stopwatch_screen.dart';
 import 'tool_entry.dart';
 
@@ -27,6 +28,15 @@ final List<ToolEntry> toolCatalog = [
       keywords: c.keywords,
       builder: (context) => CalcToolScreen(tool: c),
     ),
+  ToolEntry(
+    id: 'scientific_calculator',
+    title: t('Scientific Calculator', 'साइंटिफिक कैलकुलेटर'),
+    description: t('Trig, log, powers, roots, memory and history', 'त्रिकोणमिति, लॉग, पावर, रूट, मेमोरी और हिस्ट्री'),
+    icon: Icons.calculate_rounded,
+    category: ToolCategory.examCalc,
+    keywords: const ['scientific', 'calculator', 'sin', 'cos', 'tan', 'log', 'sqrt', 'factorial', 'power', 'trigonometry'],
+    builder: (context) => const ScientificCalculatorScreen(),
+  ),
   ToolEntry(
     id: 'currency_converter',
     title: t('Currency Converter', 'मुद्रा कन्वर्टर'),

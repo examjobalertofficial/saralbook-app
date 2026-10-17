@@ -13,16 +13,29 @@ class PostKindStyle {
   const PostKindStyle(this.label, this.icon, this.color);
 }
 
+/// Works out what a post is from its title. The first rule that matches wins,
+/// so a title like "SSC Recruitment 2026 Admit Card" is an Admit Card.
+///
+///  * Answer Key : answer key
+///  * Admit Card : admit card, exam date, exam city (details), time table, interview letter, hall ticket
+///  * Result     : result, mark(s), merit list
+///  * Latest Job : online form, recruitment (also vacancy)
 PostKind postKindOf(String title) {
   final s = title.toLowerCase();
   bool has(List<String> words) => words.any(s.contains);
-  if (has(['admit card', 'hall ticket', 'call letter', 'e-admit', 'city intimation'])) return PostKind.admitCard;
-  if (has(['answer key', 'answerkey', 'response sheet', 'objection'])) return PostKind.answerKey;
-  if (has(['result', 'merit list', 'cut off', 'cutoff', 'scorecard', 'score card'])) return PostKind.result;
-  if (has(['syllabus', 'exam pattern', 'exam date', 'time table', 'timetable'])) return PostKind.syllabus;
-  if (has(['recruitment', 'vacancy', 'vacancies', 'apply', 'notification', 'bharti', 'online form', 'jobs'])) {
-    return PostKind.job;
+  if (has(['answer key', 'answerkey', 'response sheet'])) return PostKind.answerKey;
+  if (has([
+    'admit card', 'admitcard', 'hall ticket', 'call letter', 'exam date', 'exam city',
+    'time table', 'timetable', 'interview letter', 'e-admit',
+  ])) {
+    return PostKind.admitCard;
   }
+  if (has(['result', 'merit list', 'cut off', 'cutoff', 'scorecard', 'score card']) ||
+      RegExp(r'\bmarks?\b').hasMatch(s)) {
+    return PostKind.result;
+  }
+  if (has(['online form', 'recruitment', 'vacancy', 'vacancies', 'bharti'])) return PostKind.job;
+  if (has(['syllabus', 'exam pattern'])) return PostKind.syllabus;
   return PostKind.other;
 }
 

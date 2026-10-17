@@ -6,6 +6,10 @@ class AppInfo {
   static const String playStoreUrl =
       'https://play.google.com/store/apps/details?id=com.saralbook.app';
 
+  /// Our YouTube channel.
+  static const String youtubeUrl =
+      'https://www.youtube.com/channel/UCtWaMMqPgDL-7vwJQXziaTg';
+
   static const String privacyUrl = 'https://saralbook.com/privacy-policy/';
   static const String termsUrl = 'https://saralbook.com/terms-and-conditions/';
   static const String contactUrl = 'https://saralbook.com/contact/';

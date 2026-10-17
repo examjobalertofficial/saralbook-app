@@ -153,7 +153,7 @@ class FeedRepository {
     q.putIfAbsent('orderby', () => 'modified');
     q.putIfAbsent('order', () => 'desc');
     final perPage = int.tryParse(q['per_page'] ?? '') ?? 6;
-    q['per_page'] = perPage.clamp(1, 20).toString();
+    q['per_page'] = perPage.clamp(1, 100).toString();
     return uri.replace(queryParameters: q).toString();
   }
 

@@ -23,7 +23,7 @@ class FeedSection extends StatelessWidget {
           SectionHeader(section.titleFor(lang), accent: toolAccent(section.id)),
           PostFeed(
             key: ValueKey('${section.id}|${section.feedUrl}'),
-            resolveUrl: (_) async => section.feedUrl,
+            urls: [section.feedUrl],
             refreshToken: refreshToken,
           ),
         ],

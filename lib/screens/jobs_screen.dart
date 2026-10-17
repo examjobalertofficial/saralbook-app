@@ -11,6 +11,7 @@ import '../widgets/page_body.dart';
 import '../widgets/post_feed.dart';
 import '../widgets/tr.dart';
 import '../widgets/website_card.dart';
+import '../widgets/youtube_card.dart';
 
 /// The post lists of the Exam Job Alert website (latest jobs, admit cards,
 /// results...) taken from the Home sections you set up in WordPress, so the
@@ -140,13 +141,16 @@ class _JobsScreenState extends State<JobsScreen> {
                         children: [
                           PostFeed(
                             key: ValueKey('jobs_${_tab.id}'),
-                            resolveUrl: (feeds) => jobTabUrl(feeds, _tab),
+                            urls: jobSourceUrls,
+                            filter: _tab.accepts,
                             refreshToken: _refresh,
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 10),
+                    const YoutubeCard(),
+                    const SizedBox(height: 14),
                     for (var i = 0; i < sites.length; i++)
                       FadeSlideIn(
                         child: WebsiteCard(
