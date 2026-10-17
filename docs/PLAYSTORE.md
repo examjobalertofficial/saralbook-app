@@ -1,7 +1,7 @@
-# Putting SaralBook on Google Play (version 2.1.0)
+# Putting SaralBook on Google Play (version 2.1.1)
 
 ## 1. Build the file Google wants
-1. Upload `saralbook-app-phase17.zip` to GitHub, run **Apply update zip**, then **Build SaralBook APK**.
+1. Upload `saralbook-app-phase18.zip` to GitHub, run **Apply update zip**, then **Build SaralBook APK**.
 2. Open the finished run. Under *Artifacts* download **SaralBook-PlayStore-Bundle** (`app-release.aab`).
    Google Play needs this `.aab` file, not the APK. The AAB is also much smaller for users
    (Google sends each phone only what it needs), so the 100 MB APK size is not a problem.
@@ -30,8 +30,8 @@ Only you (signed in as admin) see a hint on the Jobs tab.
   feature graphic 1024x500, at least 2 phone screenshots.
 * Start with **Internal testing** (add your Gmail), install from the Play link, check sign-in, then
   promote to **Production**. New personal developer accounts must run a closed test with 12+ testers for 14 days first.
-* Each new upload needs a bigger build number: this version is `2.1.0+18`; the next must be `+19` or more.
+* Each new upload needs a bigger build number: this version is `2.1.1+19`; the next must be `+20` or more.
 
 ## 4. After release
-* Set *Latest build* in the SaralBook App plugin to 18 to nudge old APK users to update.
+* Set *Latest build* in the SaralBook App plugin to 19 to nudge old APK users to update.
 * Test the invite link (https://saralbook.com/app/join/CODE) from the Play version.
