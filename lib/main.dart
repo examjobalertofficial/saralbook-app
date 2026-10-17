@@ -5,6 +5,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'config/app_info.dart';
 import 'core/app_services.dart';
 import 'core/l10n/app_strings.dart';
@@ -18,11 +20,104 @@ import 'screens/update_required_screen.dart';
 import 'widgets/feature_gate.dart';
 import 'screens/tools/tool_catalog.dart';
 import 'theme/app_theme.dart';
+import 'widgets/brand_logo.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final services = await AppServices.create();
-  runApp(SaralBookApp(services: services));
+  // The first picture is drawn at once; the app's services are prepared behind it.
+  // If anything is slow or fails, the person sees where and can retry.
+  runApp(const _Boot());
+}
+
+/// Shows a plain start screen while [AppServices] are prepared, then the app.
+class _Boot extends StatefulWidget {
+  const _Boot();
+
+  @override
+  State<_Boot> createState() => _BootState();
+}
+
+class _BootState extends State<_Boot> {
+  AppServices? _services;
+  String _step = 'Starting';
+  Object? _error;
+  int _attempt = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(_run);
+  }
+
+  void _start() {
+    setState(() {
+      _error = null;
+      _step = 'Starting';
+    });
+    _run();
+  }
+
+  Future<void> _run() async {
+    final attempt = ++_attempt;
+    try {
+      final s = await AppServices.create(onStep: (x) {
+        if (mounted && attempt == _attempt) setState(() => _step = x);
+      }).timeout(const Duration(seconds: 20));
+      if (!mounted || attempt != _attempt) return;
+      setState(() => _services = s);
+    } catch (e) {
+      if (!mounted || attempt != _attempt) return;
+      setState(() => _error = e);
+    }
+  }
+
+  Future<void> _resetAndRetry() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+    } catch (_) {}
+    if (mounted) _start();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _services;
+    if (s != null) return SaralBookApp(services: s);
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const BrandLogo(size: 96),
+                const SizedBox(height: 18),
+                const Text('SaralBook', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 22),
+                if (_error == null) ...[
+                  const SizedBox(width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 3)),
+                  const SizedBox(height: 12),
+                  Text('$_step...'),
+                ] else ...[
+                  const Text('SaralBook could not start.', style: TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 6),
+                  Text('Step: $_step\n$_error', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12)),
+                  const SizedBox(height: 16),
+                  FilledButton(onPressed: _start, child: const Text('Try again')),
+                  const SizedBox(height: 8),
+                  OutlinedButton(onPressed: _resetAndRetry, child: const Text('Reset saved data and try again')),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class SaralBookApp extends StatefulWidget {
