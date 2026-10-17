@@ -1,7 +1,7 @@
-# Putting SaralBook on Google Play (version 2.2.2)
+# Putting SaralBook on Google Play (version 2.2.3)
 
 ## 1. Build the file Google wants
-1. Upload `saralbook-app-phase22.zip` to GitHub, run **Apply update zip**, then **Build SaralBook APK**.
+1. Upload `saralbook-app-phase23.zip` to GitHub, run **Apply update zip**, then **Build SaralBook APK**.
 2. Open the finished run. Under *Artifacts* download **SaralBook-PlayStore-Bundle** (`app-release.aab`).
    Google Play needs this `.aab` file, not the APK. The AAB is also much smaller for users
    (Google sends each phone only what it needs), so the 100 MB APK size is not a problem.
@@ -30,8 +30,14 @@ Only you (signed in as admin) see a hint on the Jobs tab.
   feature graphic 1024x500, at least 2 phone screenshots.
 * Start with **Internal testing** (add your Gmail), install from the Play link, check sign-in, then
   promote to **Production**. New personal developer accounts must run a closed test with 12+ testers for 14 days first.
-* Each new upload needs a bigger build number: this version is `2.2.2+23`; the next must be `+24` or more.
+* Each new upload needs a bigger build number: this version is `2.2.3+24`; the next must be `+25` or more.
 
 ## 4. After release
-* Set *Latest build* in the SaralBook App plugin to 23 to nudge old APK users to update.
+* Set *Latest build* in the SaralBook App plugin to 24 to nudge old APK users to update.
 * Test the invite link (https://saralbook.com/app/join/CODE) from the Play version.
+
+## 5. If a new build suddenly stops opening
+The app is built fresh on GitHub each time, so a brand-new release of a library can break it
+without any change of ours (this happened on 17 Oct 2026 with `shared_preferences_android 2.5.0`).
+The start screen now shows the error text. Send that text to the developer; the fix is to pin the
+last working library version in `pubspec.yaml` under `dependency_overrides`.
