@@ -1,7 +1,7 @@
 name: app
 description: SaralBook - all SaralBook platforms in one app.
 publish_to: 'none'
-version: 2.1.1+20
+version: 2.1.2+21
 
 environment:
   sdk: ^3.5.0
@@ -63,9 +63,9 @@ flutter_native_splash:
   android_12:
     color: "#FFFFFF"
     color_dark: "#0F1720"
-    image: assets/branding/app_icon_foreground.png
-    icon_background_color: "#1E5AA8"
-    icon_background_color_dark: "#1E5AA8"
+    image: assets/branding/splash_icon.png
+    icon_background_color: "#2A356B"
+    icon_background_color_dark: "#2A356B"
 
 # shared_preferences_android 2.5.0 (17 Oct 2026) crashes release builds at start-up.
 # Stay on the 2.4.x line, which is what phase17 was built with.
