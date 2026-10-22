@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/app_services.dart';
 import '../core/config/remote_config.dart';
+import '../core/jobs/job_categories.dart';
 import '../core/jobs/job_tabs.dart';
 import '../core/l10n/app_strings.dart';
 import '../utils/navigation.dart';
@@ -41,6 +42,8 @@ class JobsScreen extends StatefulWidget {
 
 class _JobsScreenState extends State<JobsScreen> {
   late JobTab _tab = jobTabById(widget.initialTab) ?? jobTabs.first;
+  // ExamJobAlert first; the switch at the top changes the website.
+  JobSite _site = jobSites.first;
   int _refresh = 0;
 
   @override
@@ -72,6 +75,22 @@ class _JobsScreenState extends State<JobsScreen> {
       body: PageBody(
         child: Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+              child: SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<String>(
+                  showSelectedIcon: false,
+                  segments: [
+                    for (final site in jobSites) ButtonSegment<String>(value: site.id, label: Text(site.name)),
+                  ],
+                  selected: {_site.id},
+                  onSelectionChanged: (v) => setState(() {
+                    _site = jobSites.firstWhere((e) => e.id == v.first);
+                  }),
+                ),
+              ),
+            ),
             SizedBox(
               height: 52,
               child: ListView.separated(
@@ -136,13 +155,13 @@ class _JobsScreenState extends State<JobsScreen> {
                         ),
                       ),
                       child: Column(
-                        key: ValueKey(_tab.id),
+                        key: ValueKey('${_site.id}_${_tab.id}'),
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           PostFeed(
-                            key: ValueKey('jobs_${_tab.id}'),
-                            urls: jobSourceUrls,
-                            filter: _tab.accepts,
+                            key: ValueKey('jobs_${_site.id}_${_tab.id}'),
+                            urls: [_site.postsUrl],
+                            scopeTab: _tab.id,
                             refreshToken: _refresh,
                           ),
                         ],

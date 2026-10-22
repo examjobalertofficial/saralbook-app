@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/config/remote_config.dart';
+import '../../core/jobs/job_categories.dart';
 import '../../widgets/post_feed.dart';
 import '../tools/tool_style.dart';
 import 'section_header.dart';
@@ -24,6 +25,8 @@ class FeedSection extends StatelessWidget {
           PostFeed(
             key: ValueKey('${section.id}|${section.feedUrl}'),
             urls: [section.feedUrl],
+            // our two websites: only the five job categories, newest published first
+            scopeTab: jobSiteForUrl(section.feedUrl) != null ? 'all' : null,
             refreshToken: refreshToken,
           ),
         ],

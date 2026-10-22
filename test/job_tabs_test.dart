@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app/core/feed/feed_repository.dart';
 import 'package:app/core/feed/post_kind.dart';
+import 'package:app/core/jobs/job_categories.dart';
 import 'package:app/core/jobs/job_tabs.dart';
 import 'package:app/widgets/post_feed.dart';
 
@@ -9,8 +10,8 @@ FeedItem _post(String title, {String? link, DateTime? modified}) =>
     FeedItem(id: title, title: title, link: link ?? 'https://saralbook.com/${title.hashCode}', modified: modified);
 
 void main() {
-  test('five tabs in the order the website owner asked for', () {
-    expect(jobTabs.map((e) => e.id), ['latest', 'admit_card', 'answer_key', 'result', 'syllabus']);
+  test('six tabs in the order the website owner asked for', () {
+    expect(jobTabs.map((e) => e.id), ['latest', 'admit_card', 'answer_key', 'result', 'admission', 'syllabus']);
     for (final tab in jobTabs) {
       expect(tab.title.of('hi'), isNotEmpty);
     }
@@ -85,5 +86,37 @@ void main() {
     expect(FeedItem(id: '1', title: 'x', link: 'https://saralbook.com/a', date: d, modified: d.add(const Duration(days: 2))).isUpdated, isTrue);
     expect(FeedItem(id: '1', title: 'x', link: 'https://saralbook.com/a', date: d, modified: d.add(const Duration(minutes: 20))).isUpdated, isFalse);
     expect(const FeedItem(id: '1', title: 'x', link: 'https://saralbook.com/a').isUpdated, isFalse);
+  });
+
+  test('each website has its own five category pages', () {
+    expect(jobSites.first.id, 'examjobalert'); // shown first by default
+    final exam = jobSites.first, saral = jobSites.last;
+    expect(exam.slugs['admit_card'], 'admit-cards');
+    expect(saral.slugs['admit_card'], 'admit-card');
+    expect(exam.slugs['admission'], 'admission');
+    expect(saral.slugs['admission'], 'admission-form');
+    expect(jobSiteForUrl('https://examjobalert.com/wp-json/wp/v2/posts?per_page=6')?.id, 'examjobalert');
+    expect(jobSiteForUrl('https://www.saralbook.com/x')?.id, 'saralbook');
+    expect(jobSiteForUrl('https://example.com/x'), isNull);
+  });
+
+  test('category ids are read and turned into a post address', () {
+    final ids = JobCategories.parseIds('[{"id":5,"slug":"latest-jobs"},{"id":9,"slug":"results"},{"id":"x","slug":"bad"}]');
+    expect(ids, {'latest-jobs': 5, 'results': 9});
+    final site = jobSites.first;
+    final one = JobCategories.buildUrl(site, 'latest', ids)!;
+    expect(one, contains('categories=5'));
+    expect(one, contains('orderby=modified'));
+    final all = JobCategories.buildUrl(site, 'syllabus', ids)!;
+    expect(all, contains('categories=5,9'));
+    expect(JobCategories.buildUrl(site, 'admit_card', ids), isNull);
+    expect(JobCategories.parseIds('not json'), isEmpty);
+  });
+
+  test('newest published first when asked, so a re-edited old post stays low', () {
+    final oldEdited = FeedItem(id: '1', title: 'Old', link: 'https://saralbook.com/o', date: DateTime(2025, 1, 1), modified: DateTime(2026, 10, 20));
+    final fresh = FeedItem(id: '2', title: 'Fresh', link: 'https://saralbook.com/f', date: DateTime(2026, 10, 1), modified: DateTime(2026, 10, 1));
+    expect(mergePosts([[oldEdited, fresh]], byEdit: false).map((e) => e.title), ['Fresh', 'Old']);
+    expect(mergePosts([[oldEdited, fresh]]).map((e) => e.title), ['Old', 'Fresh']);
   });
 }

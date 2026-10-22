@@ -175,6 +175,12 @@ class FeedRepository {
       SafeUrl.isAllowed(url) &&
       _cache.get('feed:${normalizeUrl(url)}', maxAge: freshFor) != null;
 
+  /// A saved copy of [getText] with no network (or null).
+  String? peekText(String url, {Duration maxAge = const Duration(days: 7)}) {
+    if (!SafeUrl.isAllowed(url)) return null;
+    return _cache.get('txt:$url', maxAge: maxAge);
+  }
+
   /// Small cached download (for example a category list). Returns the saved
   /// copy if the network fails, or null.
   Future<String?> getText(String url, {Duration maxAge = const Duration(days: 7)}) async {

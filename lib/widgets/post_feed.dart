@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/app_services.dart';
 import '../core/feed/feed_repository.dart';
+import '../core/jobs/job_categories.dart';
 import '../core/l10n/app_strings.dart';
 import '../screens/home/section_header.dart';
 import 'post_list.dart';
@@ -17,12 +18,18 @@ class PostFeed extends StatefulWidget {
 
   /// Keeps only the posts it accepts (null = all).
   final bool Function(FeedItem item)? filter;
+
+  /// When set (a Jobs tab id, or `all`), posts of our two websites are limited
+  /// to that WordPress category. A post you take out of the category leaves the
+  /// list, and shows again when you add it back. Newest edit first.
+  final String? scopeTab;
   final int refreshToken;
   final int maxItems;
   const PostFeed({
     super.key,
     required this.urls,
     this.filter,
+    this.scopeTab,
     this.refreshToken = 0,
     this.maxItems = 60,
   });
@@ -31,8 +38,9 @@ class PostFeed extends StatefulWidget {
   State<PostFeed> createState() => _PostFeedState();
 }
 
-/// Newest edit first, one entry per link.
-List<FeedItem> mergePosts(Iterable<List<FeedItem>> lists) {
+/// One entry per link. Newest edit first, or newest published first when
+/// [byEdit] is false.
+List<FeedItem> mergePosts(Iterable<List<FeedItem>> lists, {bool byEdit = true}) {
   final seen = <String>{};
   final all = <FeedItem>[];
   for (final list in lists) {
@@ -40,7 +48,8 @@ List<FeedItem> mergePosts(Iterable<List<FeedItem>> lists) {
       if (seen.add(item.link)) all.add(item);
     }
   }
-  DateTime stamp(FeedItem i) => i.modified ?? i.date ?? DateTime.fromMillisecondsSinceEpoch(0);
+  final zero = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime stamp(FeedItem i) => byEdit ? (i.modified ?? i.date ?? zero) : (i.date ?? i.modified ?? zero);
   all.sort((a, b) => stamp(b).compareTo(stamp(a)));
   return all;
 }
@@ -68,20 +77,34 @@ class _PostFeedState extends State<PostFeed> {
 
   Future<void> _load({bool force = false}) async {
     final feeds = AppScope.of(context).feeds;
+    final cats = JobCategories(feeds);
+    final tab = widget.scopeTab;
+    const byEdit = true;
     final run = ++_run;
     if (!force && _shown == null) {
-      final saved = [for (final u in widget.urls) feeds.peek(u)].whereType<FeedResult>().toList();
+      final saved = <FeedResult>[];
+      for (final u in widget.urls) {
+        final target = tab == null ? u : cats.peekScoped(u, tab);
+        final r = target == null ? null : feeds.peek(target);
+        if (r != null) saved.add(r);
+      }
       if (saved.isNotEmpty) {
-        setState(() => _shown = FeedResult(mergePosts(saved.map((r) => r.items))));
+        setState(() => _shown = FeedResult(mergePosts(saved.map((r) => r.items), byEdit: byEdit)));
       }
     }
     final results = <FeedResult>[];
     Object? firstError;
     await Future.wait([
       for (final u in widget.urls)
-        feeds.load(u, force: force).then<void>(results.add).catchError((Object e) {
-          firstError ??= e;
-        }),
+        () async {
+          try {
+            final target = tab == null ? u : await cats.scoped(u, tab, force: force);
+            if (target == null) throw const FeedFailure(offline: false);
+            results.add(await feeds.load(target, force: force));
+          } catch (e) {
+            firstError ??= e;
+          }
+        }(),
     ]);
     if (!mounted || run != _run) return;
     setState(() {
@@ -89,7 +112,7 @@ class _PostFeedState extends State<PostFeed> {
         _error = firstError ?? const FeedFailure(offline: false);
       } else {
         _shown = FeedResult(
-          mergePosts(results.map((r) => r.items)),
+          mergePosts(results.map((r) => r.items), byEdit: byEdit),
           fromSavedCopy: results.any((r) => r.fromSavedCopy),
         );
         _error = null;

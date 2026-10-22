@@ -26,7 +26,8 @@ final List<JobTab> jobTabs = [
   JobTab('admit_card', t('Admit Card', 'एडमिट कार्ड'), Icons.badge_rounded, const Color(0xFFE8590C), PostKind.admitCard),
   JobTab('answer_key', t('Answer Key', 'आंसर की'), Icons.vpn_key_rounded, const Color(0xFF7048E8), PostKind.answerKey),
   JobTab('result', t('Result', 'रिज़ल्ट'), Icons.emoji_events_rounded, const Color(0xFF2F9E44), PostKind.result),
-  // Syllabus shows every post.
+  JobTab('admission', t('Admission', 'एडमिशन'), Icons.school_rounded, const Color(0xFFD6336C), null),
+  // Syllabus shows every post of the five categories.
   JobTab('syllabus', t('Syllabus', 'सिलेबस'), Icons.menu_book_rounded, const Color(0xFF0C8599), null),
 ];
 
@@ -37,7 +38,8 @@ JobTab? jobTabById(String? id) {
   return null;
 }
 
-/// The two websites the Jobs tab reads (newest edits first, 100 each).
+/// Plain post lists of both websites (kept for reference; the Jobs tab now asks
+/// for one category at a time, see job_categories.dart).
 const List<String> jobSourceUrls = [
   '${Endpoints.examJobAlertBase}/wp-json/wp/v2/posts?per_page=100',
   '${Endpoints.saralBookBase}/wp-json/wp/v2/posts?per_page=100',
