@@ -95,7 +95,7 @@ class JobCategories {
     final searching = search != null && search.trim().isNotEmpty;
     final url = '${site.base}/wp-json/wp/v2/posts?per_page=${perPage.clamp(1, 100)}'
         '&orderby=${searching ? 'relevance' : 'modified'}&order=desc&categories=${list.join(',')}';
-    return searching ? '$url&search=${Uri.encodeQueryComponent(search!.trim())}' : url;
+    return searching ? '$url&search=${Uri.encodeQueryComponent(search.trim())}' : url;
   }
 
   static bool _needsScope(String url) {

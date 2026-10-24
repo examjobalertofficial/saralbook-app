@@ -23,7 +23,6 @@ class _S {
   );
   static final shortcuts = t('Jobs shortcuts', 'नौकरी शॉर्टकट');
   static final toolsTitle = t('Tools', 'टूल्स');
-  static final postsTitle = t('Jobs and updates', 'नौकरी और अपडेट');
   static final searching = t('Searching…', 'खोज रहे हैं…');
   static final nothing = t('Nothing found. Try another word.', 'कुछ नहीं मिला। दूसरा शब्द आज़माएं।');
   static final needNet = t(

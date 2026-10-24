@@ -7,7 +7,6 @@ import '../core/jobs/job_tabs.dart';
 import '../core/l10n/app_strings.dart';
 import '../utils/navigation.dart';
 import '../widgets/animations.dart';
-import '../widgets/job_alerts_card.dart';
 import '../widgets/page_body.dart';
 import '../widgets/post_feed.dart';
 import '../widgets/tr.dart';
@@ -143,8 +142,6 @@ class _JobsScreenState extends State<JobsScreen> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                   children: [
-                    const JobAlertsCard(),
-                    const SizedBox(height: 14),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 260),
                       transitionBuilder: (child, anim) => FadeTransition(
