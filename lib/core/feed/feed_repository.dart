@@ -199,6 +199,21 @@ class FeedRepository {
     return _cache.read(key)?.payload;
   }
 
+  /// One download that is not saved (used for search results, so searching
+  /// does not push the Home lists out of the saved copies).
+  Future<List<FeedItem>> fetchOnce(String url) async {
+    if (!SafeUrl.isAllowed(url)) throw const FeedFailure(offline: false);
+    try {
+      final response = await _client
+          .get(Uri.parse(normalizeUrl(url)))
+          .timeout(Endpoints.requestTimeout);
+      if (response.statusCode != 200) throw const FormatException('Bad status');
+      return parseFeed(utf8.decode(response.bodyBytes, allowMalformed: true));
+    } catch (_) {
+      throw FeedFailure(offline: !await _isOnline());
+    }
+  }
+
   Future<FeedResult> load(String url, {bool force = false}) async {
     if (!SafeUrl.isAllowed(url)) {
       throw const FeedFailure(offline: false);

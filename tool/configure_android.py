@@ -24,7 +24,8 @@ queries = """
         <intent><action android:name="android.intent.action.VIEW"/><data android:scheme="http"/></intent>
         <intent><action android:name="android.intent.action.VIEW"/><data android:scheme="tel"/></intent>
         <intent><action android:name="android.intent.action.VIEW"/><data android:scheme="mailto"/></intent>
-        <intent><action android:name="android.intent.action.VIEW"/><data android:scheme="whatsapp"/></intent>"""
+        <intent><action android:name="android.intent.action.VIEW"/><data android:scheme="whatsapp"/></intent>
+        <intent><action android:name="android.media.action.IMAGE_CAPTURE"/></intent>"""
 if "</queries>" in s:
     s = s.replace("</queries>", queries + "\n    </queries>", 1)
 else:

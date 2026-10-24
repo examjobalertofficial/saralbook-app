@@ -21,7 +21,7 @@ void main() {
     for (final id in [
       'pdf_viewer', 'pdf_merge', 'pdf_split', 'pdf_compress', 'images_to_pdf',
       'pdf_to_images', 'pdf_pages', 'image_compress', 'image_resize', 'image_crop',
-      'passport_photo', 'photo_resize', 'signature_resize', 'photo_checker',
+      'passport_photo', 'photo_resize', 'signature_resize', 'photo_checker', 'doc_scanner',
     ]) {
       expect(toolCatalog.any((e) => e.id == id), isTrue, reason: id);
     }

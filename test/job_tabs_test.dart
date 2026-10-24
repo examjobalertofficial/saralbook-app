@@ -119,4 +119,13 @@ void main() {
     expect(mergePosts([[oldEdited, fresh]], byEdit: false).map((e) => e.title), ['Fresh', 'Old']);
     expect(mergePosts([[oldEdited, fresh]]).map((e) => e.title), ['Old', 'Fresh']);
   });
+
+  test('a search keeps the category filter and asks for the best match first', () {
+    final ids = {'latest-jobs': 5, 'results': 9};
+    final url = JobCategories.buildUrl(jobSites.first, 'syllabus', ids, perPage: 12, search: 'ssc cgl')!;
+    expect(url, contains('categories=5,9'));
+    expect(url, contains('search=ssc%20cgl'.replaceAll('%20', '+')));
+    expect(url, contains('orderby=relevance'));
+    expect(url, contains('per_page=12'));
+  });
 }

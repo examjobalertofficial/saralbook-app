@@ -14,6 +14,7 @@ import '../widgets/brand_logo.dart';
 import '../widgets/page_body.dart';
 import '../widgets/tr.dart';
 import '../widgets/youtube_card.dart';
+import 'search_screen.dart';
 import 'update_required_screen.dart';
 import 'home/customize_screen.dart';
 import 'home/expense_section.dart';
@@ -90,6 +91,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    const SliverToBoxAdapter(child: _SearchBar()),
                     const SliverToBoxAdapter(child: _QuickTabs()),
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
@@ -137,6 +139,46 @@ class HomeScreen extends StatelessWidget {
       default:
         return const SizedBox.shrink();
     }
+  }
+}
+
+/// A search box under the banner. Tapping it opens the full search screen.
+class _SearchBar extends StatelessWidget {
+  const _SearchBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+      child: Material(
+        color: scheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(28),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute<void>(builder: (_) => const SearchScreen()),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            child: Row(
+              children: [
+                Icon(Icons.search_rounded, color: scheme.onSurfaceVariant),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    tr(context, t('Search jobs, results, tools…', 'नौकरी, रिज़ल्ट, टूल खोजें…')),
+                    style: TextStyle(color: scheme.onSurfaceVariant),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

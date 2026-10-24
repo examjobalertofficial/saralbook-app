@@ -85,21 +85,25 @@ class JobCategories {
   }
 
   /// null when none of the tab's categories is known yet.
-  static String? buildUrl(JobSite site, String tabId, Map<String, int> ids, {int perPage = 100}) {
+  static String? buildUrl(JobSite site, String tabId, Map<String, int> ids, {int perPage = 100, String? search}) {
     final wanted = <int>{
       for (final slug in slugsFor(site, tabId))
         if (ids[slug] != null) ids[slug]!,
     };
     if (wanted.isEmpty) return null;
     final list = wanted.toList()..sort();
-    return '${site.base}/wp-json/wp/v2/posts?per_page=${perPage.clamp(1, 100)}'
-        '&orderby=modified&order=desc&categories=${list.join(',')}';
+    final searching = search != null && search.trim().isNotEmpty;
+    final url = '${site.base}/wp-json/wp/v2/posts?per_page=${perPage.clamp(1, 100)}'
+        '&orderby=${searching ? 'relevance' : 'modified'}&order=desc&categories=${list.join(',')}';
+    return searching ? '$url&search=${Uri.encodeQueryComponent(search!.trim())}' : url;
   }
 
   static bool _needsScope(String url) {
     final uri = Uri.tryParse(url);
     return uri != null && !uri.queryParameters.containsKey('categories');
   }
+
+  static String? _search(String url) => Uri.tryParse(url)?.queryParameters['search'];
 
   static int _perPage(String url) {
     final n = int.tryParse(Uri.tryParse(url)?.queryParameters['per_page'] ?? '');
@@ -112,7 +116,7 @@ class JobCategories {
     if (site == null || !_needsScope(url)) return url;
     final saved = _feeds.peekText(categoriesUrl(site));
     if (saved == null) return null;
-    return buildUrl(site, tabId, parseIds(saved), perPage: _perPage(url));
+    return buildUrl(site, tabId, parseIds(saved), perPage: _perPage(url), search: _search(url));
   }
 
   /// Same, but downloads the category ids when they are not saved yet.
@@ -126,6 +130,6 @@ class JobCategories {
       maxAge: force ? Duration.zero : const Duration(days: 1),
     );
     if (body == null) return null;
-    return buildUrl(site, tabId, parseIds(body), perPage: _perPage(url));
+    return buildUrl(site, tabId, parseIds(body), perPage: _perPage(url), search: _search(url));
   }
 }

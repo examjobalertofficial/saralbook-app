@@ -9,6 +9,7 @@ import 'files/image_screens.dart';
 import 'files/pdf_screens.dart';
 import '../resume/resume_maker_screen.dart';
 import 'pomodoro_screen.dart';
+import 'scanner/document_scanner_screen.dart';
 import 'scientific_calculator_screen.dart';
 import 'stopwatch_screen.dart';
 import 'tool_entry.dart';
@@ -56,6 +57,15 @@ final List<ToolEntry> toolCatalog = [
     builder: (context) => const ResumeMakerScreen(),
   ),
   // ---------------- PDF & image tools (offline) ----------------
+  ToolEntry(
+    id: 'doc_scanner',
+    title: t('Document Scanner', 'डॉक्यूमेंट स्कैनर'),
+    description: t('Scan with camera or gallery, straighten, filters, save as PDF', 'कैमरा या गैलरी से स्कैन करें, सीधा करें, फ़िल्टर लगाएं, PDF बनाएं'),
+    icon: Icons.document_scanner_rounded,
+    category: ToolCategory.files,
+    keywords: const ['scan', 'scanner', 'camscanner', 'document', 'camera', 'pdf', 'flatten', 'filter', 'page', 'photo', 'notes'],
+    builder: (context) => const DocumentScannerScreen(),
+  ),
   ToolEntry(
     id: 'pdf_viewer',
     title: t('PDF Viewer', 'PDF व्यूअर'),
