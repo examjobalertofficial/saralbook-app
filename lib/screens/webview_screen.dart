@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
@@ -10,9 +11,12 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import '../config/websites.dart';
 import '../core/app_services.dart';
 import '../core/l10n/app_strings.dart';
+import '../core/l10n/ltext.dart';
+import '../core/router/app_router.dart';
 import '../utils/navigation.dart';
 import '../widgets/favorite_button.dart';
 import '../widgets/offline_view.dart';
+import '../widgets/tr.dart';
 
 class WebViewScreen extends StatefulWidget {
   final String title;
@@ -213,6 +217,13 @@ class _WebViewScreenState extends State<WebViewScreen> {
     }
   }
 
+  /// Straight back to the app's Home, whatever pages were opened on top.
+  void _goHome() {
+    final router = GoRouter.of(context);
+    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+    router.go(AppRoutes.home);
+  }
+
   void _refresh() {
     if (_offline || _hasError) {
       _load();
@@ -278,6 +289,11 @@ class _WebViewScreenState extends State<WebViewScreen> {
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           actions: [
+            IconButton(
+              tooltip: tr(context, t('Home', 'होम')),
+              icon: const Icon(Icons.home_rounded),
+              onPressed: _goHome,
+            ),
             FavoriteButton(
               title: _pageTitle ?? widget.title,
               urlOf: () => _currentUrl ?? widget.url,

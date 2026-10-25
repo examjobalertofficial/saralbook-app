@@ -7,6 +7,7 @@ import '../../core/app_services.dart';
 import '../../core/files/file_helpers.dart';
 import '../../core/l10n/ltext.dart';
 import '../../core/personal/personal_data.dart';
+import '../../core/scanner/scan_store.dart';
 import '../../widgets/page_body.dart';
 import '../../widgets/tr.dart';
 import '../study/personal_ui.dart';
@@ -102,6 +103,7 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
     setState(() => _busy = true);
     try {
       await data.deleteAll().timeout(const Duration(seconds: 25));
+      await _deleteScans(services.auth.user?.uid);
       await services.sync.deleteProfile().timeout(const Duration(seconds: 15));
       await services.auth.signOut();
       messenger.showSnackBar(SnackBar(content: Text(_done.of(lang))));
@@ -110,6 +112,14 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// The scans kept on this phone for the account (see "My scans").
+  Future<void> _deleteScans(String? uid) async {
+    if (uid == null) return;
+    try {
+      await (await ScanStore.forUser(uid)).deleteAll();
+    } catch (_) {/* nothing to delete */}
   }
 
   @override

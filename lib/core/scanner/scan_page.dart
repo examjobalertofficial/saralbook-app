@@ -4,6 +4,12 @@ import 'scan_engine.dart';
 
 /// One scanned page while the person is working on it.
 class ScanPage {
+  static int _counter = 0;
+  static String _newKey() => 'p${DateTime.now().microsecondsSinceEpoch}_${_counter++}';
+
+  /// Stable name of this page (used for its saved files, survives re-ordering).
+  final String key;
+
   /// Sharp working copy (long side up to 2400 px). Used for the final file.
   final Uint8List src;
 
@@ -33,7 +39,8 @@ class ScanPage {
     this.contrast = 0,
     this.rotation = 0,
     this.thumb,
-  });
+    String? key,
+  }) : key = key ?? _newKey();
 
   factory ScanPage.fromImport(ScanImport i) => ScanPage(
         src: i.src,

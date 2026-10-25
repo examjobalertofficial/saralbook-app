@@ -33,6 +33,48 @@ class ScanTx {
   );
   static final notAPicture = t('Some files were not pictures and were skipped.', 'कुछ फ़ाइलें फ़ोटो नहीं थीं, उन्हें छोड़ दिया गया।');
 
+  // my scans, re-order, preview
+  static final myScans = t('My scans', 'मेरे स्कैन');
+  static final savedNote = t(
+    'Saved on this phone in "My scans" while you work.',
+    'काम करते समय आपके फ़ोन में "मेरे स्कैन" में सेव रहता है।',
+  );
+  static final signInHint = t(
+    'Sign in (More tab) to keep your scans in "My scans" and come back to them later. Scans are saved only on this phone.',
+    'अपने स्कैन "मेरे स्कैन" में रखने और बाद में खोलने के लिए साइन इन करें (More टैब)। स्कैन सिर्फ इसी फ़ोन में सेव होते हैं।',
+  );
+  static final reorder = t('Re-order pages', 'पेज आगे-पीछे करें');
+  static final reorderTitle = t('Re-order pages', 'पेज आगे-पीछे करें');
+  static final reorderHint = t(
+    'Press and drag the handle on the right to move a page.',
+    'पेज हिलाने के लिए दाईं ओर का हैंडल दबाकर खींचें।',
+  );
+  static final newScan = t('New scan', 'नया स्कैन');
+  static final newScanAsk = t(
+    'Start a new scan? The pages on this screen will be cleared.',
+    'नया स्कैन शुरू करें? इस स्क्रीन के पेज हट जाएंगे।',
+  );
+  static final newScanKept = t(
+    'Start a new scan? The current one stays in "My scans".',
+    'नया स्कैन शुरू करें? मौजूदा स्कैन "मेरे स्कैन" में रहेगा।',
+  );
+  static final yes = t('Start', 'शुरू करें');
+  static final cancel = t('Cancel', 'रद्द करें');
+  static final previewPdf = t('Preview PDF', 'PDF देखें');
+  static final previewTitle = t('PDF preview', 'PDF प्रीव्यू');
+  static final libraryEmpty = t('No saved scans yet.', 'अभी कोई सेव स्कैन नहीं।');
+  static final libraryNote = t(
+    'These scans are saved only on this phone, for your account. Nothing is uploaded.',
+    'ये स्कैन सिर्फ इसी फ़ोन में आपके अकाउंट के लिए सेव हैं। कुछ भी अपलोड नहीं होता।',
+  );
+  static final openNow = t('Open now', 'अभी खुला है');
+  static final deleteScanAsk = t('Delete this saved scan from the phone?', 'यह सेव स्कैन फ़ोन से हटाएं?');
+  static final openFailed = t(
+    'This saved scan could not be opened.',
+    'यह सेव स्कैन खुल नहीं सका।',
+  );
+  static LText pagesCount(int n) => t('$n ${n == 1 ? 'page' : 'pages'}', '$n पेज');
+
   // editor
   static final editTitle = t('Edit page', 'पेज एडिट करें');
   static final done = t('Done', 'हो गया');

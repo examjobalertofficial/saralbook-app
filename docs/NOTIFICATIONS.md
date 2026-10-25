@@ -8,7 +8,7 @@ They use OneSignal (free plan). The App ID is public; the REST API Key stays on 
    OneSignal asks for the Firebase "service account" key of your Firebase project
    (Firebase console > Project settings > Service accounts > Generate new private key).
 2. Copy the **App ID** and the **REST API Key** (OneSignal > Settings > Keys & IDs).
-3. WordPress > **SaralBook App** (left menu) > Push notifications: paste the App ID, save.
+3. WordPress > **SaralBook App** (left menu) > Push notifications: paste the App ID, save. (If you do not see this box, upload the newer "SaralBook App Config" plugin, version 1.2.0 or higher, from the wordpress folder.)
    The app reads it the next time it starts and shows the alert switch.
 4. WordPress > Settings > **SaralBook App Push**: paste App ID + REST API Key, press "Send test notification".
 5. Optional: Settings > **SaralBook Update Alerts** for posts that are moved into Admit Card / Result later.
