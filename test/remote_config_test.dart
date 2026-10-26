@@ -8,7 +8,15 @@ void main() {
   test('defaults contain all five websites and the built-in sections', () {
     final c = AppRemoteConfig.defaults();
     expect(c.sites.length, 5);
-    expect(c.sections.first.type, 'platforms');
+    // Home order: jobs, SaralBook, expense tracker, then the rest as before.
+    expect(c.sections.map((e) => e.id).toList(), [
+      'latest_jobs',
+      'saralbook_updates',
+      'expense',
+      'platforms',
+      'favorites',
+      'recent',
+    ]);
     expect(c.maintenance.enabled, isFalse);
   });
 

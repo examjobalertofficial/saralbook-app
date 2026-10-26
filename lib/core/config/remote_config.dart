@@ -108,7 +108,6 @@ class AppRemoteConfig {
   static const Set<String> supportedSectionTypes = {'platforms', 'feed', 'recent', 'favorites', 'expense'};
 
   static const List<HomeSection> defaultSections = [
-    HomeSection(id: 'platforms', type: 'platforms'),
     HomeSection(
       id: 'latest_jobs',
       type: 'feed',
@@ -129,6 +128,7 @@ class AppRemoteConfig {
       title: 'Expense Tracker',
       titleHi: 'खर्च ट्रैकर',
     ),
+    HomeSection(id: 'platforms', type: 'platforms'),
     HomeSection(
       id: 'favorites',
       type: 'favorites',
