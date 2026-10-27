@@ -10,6 +10,7 @@ import '../utils/navigation.dart';
 import '../core/jobs/job_tabs.dart';
 import '../core/router/app_router.dart';
 import '../widgets/animations.dart';
+import '../widgets/announcement_card.dart';
 import '../widgets/brand_logo.dart';
 import '../widgets/page_body.dart';
 import '../widgets/tr.dart';
@@ -272,20 +273,15 @@ class _Notices extends StatelessWidget {
         onTap: () => openUpdatePage(config.update.target),
       ));
     }
-    for (final n in notes) {
-      children.add(_Banner(
-        icon: Icons.campaign_rounded,
-        title: n.title,
-        message: n.message,
-        background: scheme.primaryContainer,
-        foreground: scheme.onPrimaryContainer,
-        onTap: n.url == null
-            ? null
-            : () => openFeedItem(
-                  context,
-                  n.title.isEmpty ? n.message : n.title,
-                  n.url!,
-                ),
+    if (notes.isNotEmpty) {
+      children.add(AnnouncementCard(
+        items: notes,
+        onOpen: (n) {
+          final url = n.url;
+          if (url != null) {
+            openFeedItem(context, n.title.isEmpty ? n.message : n.title, url);
+          }
+        },
       ));
     }
     if (children.isEmpty) return const SizedBox.shrink();

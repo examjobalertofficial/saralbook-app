@@ -6,6 +6,8 @@ import '../../core/tools/calculators.dart';
 import 'calc_tool_screen.dart';
 import '../expense/currency_screens.dart';
 import 'files/image_screens.dart';
+import 'imagenote/image_note_screen.dart';
+import 'pdfedit/pdf_editor_screen.dart';
 import 'files/pdf_screens.dart';
 import '../resume/resume_maker_screen.dart';
 import 'pomodoro_screen.dart';
@@ -65,6 +67,24 @@ final List<ToolEntry> toolCatalog = [
     category: ToolCategory.files,
     keywords: const ['scan', 'scanner', 'camscanner', 'document', 'camera', 'pdf', 'flatten', 'filter', 'page', 'photo', 'notes'],
     builder: (context) => const DocumentScannerScreen(),
+  ),
+  ToolEntry(
+    id: 'pdf_editor',
+    title: t('PDF Editor', 'PDF एडिटर'),
+    description: t('Add text, sign, draw, highlight, white-out, re-order pages, page numbers', 'टेक्स्ट, हस्ताक्षर, ड्रॉइंग, हाइलाइट, सफेद पट्टी, पेज क्रम, पेज नंबर'),
+    icon: Icons.edit_note_rounded,
+    category: ToolCategory.files,
+    keywords: const ['pdf', 'edit', 'editor', 'sign', 'signature', 'text', 'draw', 'highlight', 'watermark', 'page number', 'rotate', 'delete page', 'fill form', 'annotate'],
+    builder: (context) => const PdfEditorScreen(),
+  ),
+  ToolEntry(
+    id: 'image_note',
+    title: t('Photo with Note', 'फ़ोटो के नीचे नोट'),
+    description: t('Add name / D.O.B text under a photo, set size in KB', 'फ़ोटो के नीचे नाम / जन्मतिथि लिखें, KB में आकार तय करें'),
+    icon: Icons.subtitles_outlined,
+    category: ToolCategory.examJob,
+    keywords: const ['photo', 'note', 'caption', 'name', 'dob', 'date of birth', 'dop', 'text', 'form', 'upload', 'kb', 'image'],
+    builder: (context) => const ImageNoteScreen(),
   ),
   ToolEntry(
     id: 'pdf_viewer',
