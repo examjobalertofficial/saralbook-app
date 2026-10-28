@@ -8,6 +8,7 @@ import '../expense/currency_screens.dart';
 import 'files/image_screens.dart';
 import 'imagenote/image_note_screen.dart';
 import 'pdfedit/pdf_editor_screen.dart';
+import 'pdfsan/pdf_sanitizer_screen.dart';
 import 'files/pdf_screens.dart';
 import '../resume/resume_maker_screen.dart';
 import 'pomodoro_screen.dart';
@@ -85,6 +86,15 @@ final List<ToolEntry> toolCatalog = [
     category: ToolCategory.examJob,
     keywords: const ['photo', 'note', 'caption', 'name', 'dob', 'date of birth', 'dop', 'text', 'form', 'upload', 'kb', 'image'],
     builder: (context) => const ImageNoteScreen(),
+  ),
+  ToolEntry(
+    id: 'pdf_sanitizer',
+    title: t('PDF Sanitizer', 'PDF सैनिटाइज़र'),
+    description: t('See and remove hidden data: author, scripts, attachments, links. Fully offline', 'छुपी जानकारी देखें और हटाएं: लेखक, स्क्रिप्ट, अटैचमेंट, लिंक। पूरी तरह ऑफ़लाइन'),
+    icon: Icons.cleaning_services_rounded,
+    category: ToolCategory.files,
+    keywords: const ['pdf', 'sanitize', 'sanitizer', 'clean', 'metadata', 'remove metadata', 'privacy', 'secure', 'flatten', 'javascript', 'hidden', 'author', 'safe'],
+    builder: (context) => const PdfSanitizerScreen(),
   ),
   ToolEntry(
     id: 'pdf_viewer',

@@ -7,11 +7,12 @@ import '../core/config/remote_config.dart';
 import '../core/l10n/ltext.dart';
 import 'tr.dart';
 
-/// The owner's announcements (up to 3) as one bright, animated card:
-/// a glowing gradient, a ringing megaphone with ripples and a light that
-/// sweeps across. With several announcements the card changes by itself
-/// every few seconds (swipe or tap a dot to move earlier). Animations are
-/// switched off when the phone asks for reduced motion.
+/// The owner's announcements (up to 3) as one compact, animated card.
+/// With several announcements the card slides from right to left every few
+/// seconds and each announcement has its own colour, so all of them share one
+/// small place on Home (a thin line shows the time left; swipe or tap a dot to
+/// move). A ringing megaphone with ripples, a sweeping light and a blinking
+/// dot keep it lively. Animations are off when the phone asks for reduced motion.
 class AnnouncementCard extends StatefulWidget {
   final List<Announcement> items;
   final void Function(Announcement item) onOpen;
@@ -21,8 +22,17 @@ class AnnouncementCard extends StatefulWidget {
   State<AnnouncementCard> createState() => _AnnouncementCardState();
 }
 
+/// One colour set for each announcement (they repeat if there are more).
+const List<List<Color>> _palettes = [
+  [Color(0xFFFF7A18), Color(0xFFE91E63), Color(0xFF7B2FF7)], // warm
+  [Color(0xFF00A86B), Color(0xFF00897B), Color(0xFF1565C0)], // green to blue
+  [Color(0xFF1E88E5), Color(0xFF3949AB), Color(0xFF00ACC1)], // cool blue
+];
+
+List<Color> _paletteOf(int index) => _palettes[index % _palettes.length];
+
 class _AnnouncementCardState extends State<AnnouncementCard> with SingleTickerProviderStateMixin {
-  static const _colors = [Color(0xFFFF7A18), Color(0xFFE91E63), Color(0xFF7B2FF7)];
+  static const _every = Duration(seconds: 6);
 
   late final AnimationController _anim = AnimationController(
     vsync: this,
@@ -30,6 +40,7 @@ class _AnnouncementCardState extends State<AnnouncementCard> with SingleTickerPr
   );
   Timer? _rotate;
   int _index = 0;
+  int _epoch = 0; // restarts the "time left" line
   bool _forward = true;
   bool _reduced = false;
 
@@ -42,9 +53,8 @@ class _AnnouncementCardState extends State<AnnouncementCard> with SingleTickerPr
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final reduced = MediaQuery.of(context).disableAnimations;
-    _reduced = reduced;
-    if (reduced) {
+    _reduced = MediaQuery.of(context).disableAnimations;
+    if (_reduced) {
       _anim.stop();
     } else if (!_anim.isAnimating) {
       _anim.repeat();
@@ -68,7 +78,7 @@ class _AnnouncementCardState extends State<AnnouncementCard> with SingleTickerPr
   void _startRotation() {
     _rotate?.cancel();
     if (widget.items.length < 2) return;
-    _rotate = Timer.periodic(const Duration(seconds: 6), (_) => _step(1));
+    _rotate = Timer.periodic(_every, (_) => _step(1));
   }
 
   void _step(int by) {
@@ -78,7 +88,13 @@ class _AnnouncementCardState extends State<AnnouncementCard> with SingleTickerPr
       _forward = by > 0;
       _index = (_index + by) % n;
       if (_index < 0) _index += n;
+      _epoch++;
     });
+  }
+
+  void _byPerson(int by) {
+    _step(by);
+    _startRotation(); // a fresh 6 seconds after the person's own choice
   }
 
   void _goTo(int i) {
@@ -86,8 +102,9 @@ class _AnnouncementCardState extends State<AnnouncementCard> with SingleTickerPr
     setState(() {
       _forward = i > _index;
       _index = i;
+      _epoch++;
     });
-    _startRotation(); // a fresh 6 seconds after the person's own choice
+    _startRotation();
   }
 
   @override
@@ -95,9 +112,9 @@ class _AnnouncementCardState extends State<AnnouncementCard> with SingleTickerPr
     final items = widget.items;
     if (items.isEmpty) return const SizedBox.shrink();
     final index = _index < items.length ? _index : 0;
-    final item = items[index];
+    final palette = _paletteOf(index);
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.94, end: 1),
+      tween: Tween(begin: 0.95, end: 1),
       duration: const Duration(milliseconds: 450),
       curve: Curves.easeOutBack,
       builder: (context, scale, child) => Opacity(
@@ -105,142 +122,63 @@ class _AnnouncementCardState extends State<AnnouncementCard> with SingleTickerPr
         child: Transform.scale(scale: scale, child: child),
       ),
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.only(bottom: 8),
         child: GestureDetector(
           onHorizontalDragEnd: (d) {
             final v = d.primaryVelocity ?? 0;
             if (v < -200) {
-              _step(1);
-              _startRotation();
+              _byPerson(1);
             } else if (v > 200) {
-              _step(-1);
-              _startRotation();
+              _byPerson(-1);
             }
           },
-          child: Container(
+          // the glow stays in place and changes colour; only the card slides
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 450),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: _colors[1].withAlpha(90),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
+                  color: palette[1].withAlpha(70),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: DecoratedBox(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: _colors,
+              borderRadius: BorderRadius.circular(16),
+              child: AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                alignment: Alignment.topCenter,
+                child: AnimatedSwitcher(
+                  duration: _reduced ? Duration.zero : const Duration(milliseconds: 480),
+                  switchInCurve: Curves.easeInOutCubic,
+                  switchOutCurve: Curves.easeInOutCubic,
+                  transitionBuilder: (child, animation) {
+                    // the new card comes in from the right, the old one leaves to the left
+                    final incoming = child.key == ValueKey<int>(index);
+                    final side = _forward ? 1.0 : -1.0;
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: Offset(incoming ? side : -side, 0),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    );
+                  },
+                  child: _Face(
+                    key: ValueKey<int>(index),
+                    item: items[index],
+                    palette: palette,
+                    animation: _anim,
+                    reduced: _reduced,
+                    count: items.length,
+                    index: index,
+                    epoch: _epoch,
+                    every: _every,
+                    onOpen: widget.onOpen,
+                    onDot: _goTo,
                   ),
-                ),
-                child: Stack(
-                  children: [
-                    // light sweeping across the card
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: AnimatedBuilder(
-                          animation: _anim,
-                          builder: (context, _) => LayoutBuilder(
-                            builder: (context, box) {
-                              final t = _reduced ? 0.0 : _anim.value;
-                              // the light travels during the last 45% of each round
-                              final p = ((t - 0.55) / 0.45).clamp(0.0, 1.0).toDouble();
-                              final w = box.maxWidth;
-                              return Transform.translate(
-                                offset: Offset(-w * 0.4 + p * w * 1.6, 0),
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Transform(
-                                    transform: Matrix4.skewX(-0.35),
-                                    child: Container(
-                                      width: w * 0.28,
-                                      decoration: const BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [Color(0x00FFFFFF), Color(0x55FFFFFF), Color(0x00FFFFFF)],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    Material(
-                      type: MaterialType.transparency,
-                      child: InkWell(
-                        onTap: () => widget.onOpen(item),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              _Megaphone(animation: _anim, reduced: _reduced),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: AnimatedSize(
-                                  duration: const Duration(milliseconds: 250),
-                                  alignment: Alignment.topLeft,
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 380),
-                                    transitionBuilder: (child, a) => FadeTransition(
-                                      opacity: a,
-                                      child: SlideTransition(
-                                        position: Tween<Offset>(
-                                          begin: Offset(_forward ? 0.15 : -0.15, 0),
-                                          end: Offset.zero,
-                                        ).animate(a),
-                                        child: child,
-                                      ),
-                                    ),
-                                    child: _Text(key: ValueKey('${item.id}_$index'), item: item, anim: _anim, reduced: _reduced),
-                                  ),
-                                ),
-                              ),
-                              if (item.url != null)
-                                const Padding(
-                                  padding: EdgeInsets.only(left: 6),
-                                  child: Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 18),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (items.length > 1)
-                      Positioned(
-                        right: 12,
-                        bottom: 6,
-                        child: Row(
-                          children: [
-                            for (var i = 0; i < items.length; i++)
-                              GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: () => _goTo(i),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(4),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 250),
-                                    width: i == index ? 18 : 7,
-                                    height: 7,
-                                    decoration: BoxDecoration(
-                                      color: i == index ? Colors.white : Colors.white54,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                  ],
                 ),
               ),
             ),
@@ -251,11 +189,214 @@ class _AnnouncementCardState extends State<AnnouncementCard> with SingleTickerPr
   }
 }
 
-class _Text extends StatelessWidget {
+/// One announcement drawn on its own colour.
+class _Face extends StatelessWidget {
   final Announcement item;
-  final Animation<double> anim;
+  final List<Color> palette;
+  final Animation<double> animation;
   final bool reduced;
-  const _Text({super.key, required this.item, required this.anim, required this.reduced});
+  final int count;
+  final int index;
+  final int epoch;
+  final Duration every;
+  final void Function(Announcement item) onOpen;
+  final ValueChanged<int> onDot;
+  const _Face({
+    super.key,
+    required this.item,
+    required this.palette,
+    required this.animation,
+    required this.reduced,
+    required this.count,
+    required this.index,
+    required this.epoch,
+    required this.every,
+    required this.onOpen,
+    required this.onDot,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: palette,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x30FFFFFF)),
+      ),
+      child: Stack(
+        children: [
+          // light sweeping across the card
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: animation,
+                builder: (context, _) => LayoutBuilder(
+                  builder: (context, box) {
+                    final t = reduced ? 0.0 : animation.value;
+                    // the light travels during the last 45% of each round
+                    final p = ((t - 0.55) / 0.45).clamp(0.0, 1.0).toDouble();
+                    final w = box.maxWidth;
+                    return Transform.translate(
+                      offset: Offset(-w * 0.4 + p * w * 1.6, 0),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Transform(
+                          transform: Matrix4.skewX(-0.35),
+                          child: Container(
+                            width: w * 0.26,
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Color(0x00FFFFFF), Color(0x4DFFFFFF), Color(0x00FFFFFF)],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+          Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              onTap: () => onOpen(item),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _Megaphone(animation: animation, reduced: reduced),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _LabelRow(
+                            animation: animation,
+                            reduced: reduced,
+                            count: count,
+                            index: index,
+                            onDot: onDot,
+                          ),
+                          const SizedBox(height: 2),
+                          _Body(item: item),
+                        ],
+                      ),
+                    ),
+                    if (item.url != null)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 6),
+                        child: Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 15),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // time left before the next announcement
+          if (count > 1 && !reduced)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 2.5,
+              child: IgnorePointer(
+                child: TweenAnimationBuilder<double>(
+                  key: ValueKey<int>(epoch),
+                  tween: Tween(begin: 0, end: 1),
+                  duration: every,
+                  builder: (context, v, _) => Align(
+                    alignment: Alignment.centerLeft,
+                    child: FractionallySizedBox(
+                      widthFactor: v,
+                      child: const ColoredBox(color: Color(0x66FFFFFF), child: SizedBox(height: 2.5)),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The small "ANNOUNCEMENT" label with a blinking dot, and the dots that pick an announcement.
+class _LabelRow extends StatelessWidget {
+  final Animation<double> animation;
+  final bool reduced;
+  final int count;
+  final int index;
+  final ValueChanged<int> onDot;
+  const _LabelRow({
+    required this.animation,
+    required this.reduced,
+    required this.count,
+    required this.index,
+    required this.onDot,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        AnimatedBuilder(
+          animation: animation,
+          builder: (context, _) {
+            final blink = reduced ? 1.0 : 0.45 + 0.55 * (0.5 + 0.5 * math.sin(animation.value * 2 * math.pi * 2));
+            return Opacity(
+              opacity: blink,
+              child: const DecoratedBox(
+                decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                child: SizedBox(width: 7, height: 7),
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 6),
+        Text(
+          tr(context, t('ANNOUNCEMENT', 'घोषणा')),
+          style: const TextStyle(
+            color: Color(0xE6FFFFFF),
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.3,
+          ),
+        ),
+        const Spacer(),
+        if (count > 1)
+          for (var i = 0; i < count; i++)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => onDot(i),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  width: i == index ? 16 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: i == index ? Colors.white : Colors.white54,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+            ),
+      ],
+    );
+  }
+}
+
+class _Body extends StatelessWidget {
+  final Announcement item;
+  const _Body({required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -264,56 +405,29 @@ class _Text extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // a small dot that blinks next to the label
-            AnimatedBuilder(
-              animation: anim,
-              builder: (context, _) {
-                final blink = reduced ? 1.0 : 0.45 + 0.55 * (0.5 + 0.5 * math.sin(anim.value * 2 * math.pi * 2));
-                return Opacity(
-                  opacity: blink,
-                  child: const DecoratedBox(
-                    decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                    child: SizedBox(width: 8, height: 8),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(width: 6),
-            Text(
-              tr(context, t('ANNOUNCEMENT', 'घोषणा')),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
-        ),
-        if (item.title.isNotEmpty) ...[
-          const SizedBox(height: 4),
+        if (item.title.isNotEmpty)
           Text(
             item.title,
-            style: text.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800, height: 1.2),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: text.titleSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15.5, height: 1.2),
           ),
-        ],
-        if (item.message.isNotEmpty) ...[
-          const SizedBox(height: 2),
-          Text(
-            item.message,
-            style: const TextStyle(color: Color(0xF2FFFFFF), height: 1.3),
+        if (item.message.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Text(
+              item.message,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xF2FFFFFF), fontSize: 13, height: 1.25),
+            ),
           ),
-        ],
-        const SizedBox(height: 8),
       ],
     );
   }
 }
 
-/// The megaphone: ripples spread from a white disc and the icon "rings".
+/// The megaphone: ripples spread from a soft disc and the icon "rings".
 class _Megaphone extends StatelessWidget {
   final Animation<double> animation;
   final bool reduced;
@@ -322,8 +436,8 @@ class _Megaphone extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 56,
-      height: 56,
+      width: 46,
+      height: 46,
       child: AnimatedBuilder(
         animation: animation,
         builder: (context, _) {
@@ -335,13 +449,13 @@ class _Megaphone extends StatelessWidget {
               rings.add(Opacity(
                 opacity: (0.5 * (1 - p)).clamp(0.0, 1.0).toDouble(),
                 child: Transform.scale(
-                  scale: 0.8 + 0.75 * p,
+                  scale: 0.8 + 0.7 * p,
                   child: const DecoratedBox(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.fromBorderSide(BorderSide(color: Colors.white, width: 2)),
+                      border: Border.fromBorderSide(BorderSide(color: Colors.white, width: 1.6)),
                     ),
-                    child: SizedBox(width: 52, height: 52),
+                    child: SizedBox(width: 42, height: 42),
                   ),
                 ),
               ));
@@ -349,7 +463,7 @@ class _Megaphone extends StatelessWidget {
           }
           // rings (wiggles) during the first 30% of each round, then rests
           final wiggle = (!reduced && t < 0.3) ? math.sin(t / 0.3 * math.pi * 6) * 0.22 * (1 - t / 0.3) : 0.0;
-          final pulse = reduced ? 1.0 : 1.0 + 0.06 * math.sin(t * 2 * math.pi);
+          final pulse = reduced ? 1.0 : 1.0 + 0.05 * math.sin(t * 2 * math.pi);
           return Stack(
             alignment: Alignment.center,
             children: [
@@ -357,13 +471,13 @@ class _Megaphone extends StatelessWidget {
               Transform.scale(
                 scale: pulse,
                 child: Container(
-                  width: 46,
-                  height: 46,
+                  width: 38,
+                  height: 38,
                   decoration: const BoxDecoration(color: Color(0x33FFFFFF), shape: BoxShape.circle),
                   alignment: Alignment.center,
                   child: Transform.rotate(
                     angle: wiggle,
-                    child: const Icon(Icons.campaign_rounded, color: Colors.white, size: 30),
+                    child: const Icon(Icons.campaign_rounded, color: Colors.white, size: 25),
                   ),
                 ),
               ),
