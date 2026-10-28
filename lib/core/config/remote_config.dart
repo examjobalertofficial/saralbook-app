@@ -190,7 +190,7 @@ class AppRemoteConfig {
       );
     }
 
-    // Announcements (max 3)
+    // Announcements (max 10)
     final announcements = <Announcement>[];
     final a = json['announcements'];
     if (a is List) {
@@ -207,7 +207,7 @@ class AppRemoteConfig {
           message: message,
           url: SafeUrl.isAllowed(url) ? url : null,
         ));
-        if (announcements.length == 3) break;
+        if (announcements.length == 10) break;
       }
     }
 

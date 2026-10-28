@@ -71,7 +71,7 @@ void main() {
     expect(c.sections.map((s) => s.id).toList(), ['jobs', 'recent']);
   });
 
-  test('announcement links must be safe; max three kept', () {
+  test('announcement links must be safe; max ten kept', () {
     final c = AppRemoteConfig.tryParse(jsonEncode({
       'announcements': [
         {'title': 'A', 'url': 'https://saralbook.com/a'},
@@ -79,9 +79,17 @@ void main() {
         {'title': 'C'}, {'title': 'D'},
       ],
     }))!;
-    expect(c.announcements.length, 3);
+    expect(c.announcements.length, 4);
     expect(c.announcements[0].url, 'https://saralbook.com/a');
     expect(c.announcements[1].url, isNull);
+  });
+
+  test('more than ten announcements are cut to ten', () {
+    final c = AppRemoteConfig.tryParse(jsonEncode({
+      'announcements': [for (var i = 0; i < 14; i++) {'title': 'N$i'}],
+    }))!;
+    expect(c.announcements.length, 10);
+    expect(c.announcements.last.title, 'N9');
   });
 
   test('Hindi title is used only for Hindi', () {

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SaralBook App Config
  * Description: Controls the SaralBook mobile app (Home sections, announcements, maintenance, service on/off) from the WordPress dashboard. No app update needed.
- * Version: 1.2.0
+ * Version: 1.3.0
  * Author: SaralBook
  * License: GPLv2 or later
  *
@@ -72,7 +72,7 @@ function saralbook_app_sanitize( $in ) {
 	);
 
 	$out['announcements'] = array();
-	for ( $i = 0; $i < 3; $i++ ) {
+	for ( $i = 0; $i < 10; $i++ ) {
 		$row = $in['announcements'][ $i ] ?? array();
 		$out['announcements'][ $i ] = array(
 			'title'   => sanitize_text_field( $row['title'] ?? '' ),
@@ -155,9 +155,9 @@ function saralbook_app_render_page() {
 			</p>
 			<p><input type="text" class="large-text" placeholder="Message (optional)" name="<?php echo esc_attr( $name ); ?>[maintenance][message]" value="<?php echo esc_attr( $m['message'] ?? '' ); ?>"></p>
 
-			<h2>Announcements (max 3)</h2>
+			<h2>Announcements (max 10)</h2>
 			<table class="widefat striped"><thead><tr><th>Title</th><th>Message</th><th>Link (optional, https only, your sites)</th></tr></thead><tbody>
-			<?php for ( $i = 0; $i < 3; $i++ ) : $r = $o['announcements'][ $i ] ?? array(); ?>
+			<?php for ( $i = 0; $i < 10; $i++ ) : $r = $o['announcements'][ $i ] ?? array(); ?>
 				<tr>
 					<td><input type="text" class="regular-text" name="<?php echo esc_attr( $name ); ?>[announcements][<?php echo (int) $i; ?>][title]" value="<?php echo esc_attr( $r['title'] ?? '' ); ?>"></td>
 					<td><input type="text" class="large-text" name="<?php echo esc_attr( $name ); ?>[announcements][<?php echo (int) $i; ?>][message]" value="<?php echo esc_attr( $r['message'] ?? '' ); ?>"></td>
