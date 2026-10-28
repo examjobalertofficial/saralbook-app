@@ -92,6 +92,17 @@ void main() {
     expect(c.announcements.last.title, 'N9');
   });
 
+  test('own Google Play page is allowed as announcement link', () {
+    final c = AppRemoteConfig.tryParse(jsonEncode({
+      'announcements': [
+        {'title': 'Update', 'url': 'https://play.google.com/store/apps/details?id=com.saralbook.app'},
+        {'title': 'Other', 'url': 'https://play.google.com/store/apps/details?id=com.other.app'},
+      ],
+    }))!;
+    expect(c.announcements[0].url, isNotNull);
+    expect(c.announcements[1].url, isNull);
+  });
+
   test('Hindi title is used only for Hindi', () {
     const s = HomeSection(id: 'x', type: 'feed', title: 'Jobs', titleHi: 'नौकरियां');
     expect(s.titleFor('en'), 'Jobs');

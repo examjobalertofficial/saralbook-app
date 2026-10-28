@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/app_services.dart';
@@ -278,7 +279,10 @@ class _Notices extends StatelessWidget {
         items: notes,
         onOpen: (n) {
           final url = n.url;
-          if (url != null) {
+          if (url != null && url.startsWith('https://play.google.com/')) {
+            // Our own Google Play page: open the Play Store app directly.
+            launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication).then<void>((_) {}, onError: (Object _) {});
+          } else if (url != null) {
             openFeedItem(context, n.title.isEmpty ? n.message : n.title, url);
           }
         },

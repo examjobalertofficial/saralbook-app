@@ -205,7 +205,7 @@ class AppRemoteConfig {
           id: id.isEmpty ? 'a${announcements.length}' : id,
           title: title,
           message: message,
-          url: SafeUrl.isAllowed(url) ? url : null,
+          url: (SafeUrl.isAllowed(url) || UpdatePolicy.isSafeTarget(url)) ? url : null,
         ));
         if (announcements.length == 10) break;
       }

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SaralBook App Config
  * Description: Controls the SaralBook mobile app (Home sections, announcements, maintenance, service on/off) from the WordPress dashboard. No app update needed.
- * Version: 1.3.0
+ * Version: 1.3.1
  * Author: SaralBook
  * License: GPLv2 or later
  *
@@ -43,6 +43,10 @@ function saralbook_app_allowed_url( $url ) {
 		return '';
 	}
 	$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+	// SaralBook's own Google Play page is also allowed.
+	if ( 'play.google.com' === $host && 0 === strpos( $url, 'https://play.google.com/store/apps/details?id=com.saralbook.app' ) ) {
+		return $url;
+	}
 	foreach ( array( 'saralbook.com', 'examjobalert.com', 'onlinecalcy.com' ) as $domain ) {
 		if ( $host === $domain || substr( $host, -strlen( $domain ) - 1 ) === '.' . $domain ) {
 			return $url;
