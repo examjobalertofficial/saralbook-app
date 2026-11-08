@@ -1,7 +1,7 @@
-/// Kruti Dev (old Hindi typing font) -> Unicode (Mangal) converter.
-///
-/// It handles the common letters, matras, half letters, "ि" and reph
-/// re-ordering. Rare symbols are left unchanged, so check important text.
+// Kruti Dev (old Hindi typing font) -> Unicode (Mangal) converter.
+//
+// It handles the common letters, matras, half letters, "ि" and reph
+// re-ordering. Rare symbols are left unchanged, so check important text.
 
 const String _virama = '्';
 const String _reph = ''; // temporary marker for the Kruti "Z" (reph)
@@ -18,7 +18,7 @@ final List<MapEntry<String, String>> _map = (() {
     // matras
     'kS': 'ौ', 'ks': 'ो', 'kW': 'ॉ', 'k': 'ा', 'h': 'ी', 'q': 'ु', 'w': 'ू',
     's': 'े', 'S': 'ै', '`': 'ृ', 'a': 'ं', '¡': 'ँ', '%': 'ः', '~': _virama,
-    'z': '${_virama}र', // rakar (प्र): virama + ra
+    'z': _virama + 'र', // rakar (प्र): virama + ra
     // full consonants
     'd': 'क', 'x': 'ग', '³': 'ङ', 'p': 'च', 'N': 'छ', 't': 'ज', '¥': 'ञ',
     'V': 'ट', 'B': 'ठ', 'M': 'ड', '<': 'ढ', 'r': 'त', 'n': 'द', 'u': 'न',

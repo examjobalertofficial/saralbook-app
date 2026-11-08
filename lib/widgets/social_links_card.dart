@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/app_services.dart';
-import '../core/config/social_links.dart';
 import '../core/l10n/ltext.dart';
 import 'tr.dart';
 

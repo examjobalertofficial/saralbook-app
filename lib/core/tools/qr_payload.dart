@@ -1,4 +1,4 @@
-/// Builds the text that goes inside a QR code.
+// Builds the text that goes inside a QR code.
 
 String _wifiEscape(String s) => s.replaceAllMapped(RegExp(r'([\;,:"])'), (m) => '\\${m.group(1)}');
 
