@@ -12,6 +12,7 @@ import '../widgets/brand_logo.dart';
 import '../widgets/page_body.dart';
 import '../core/l10n/ltext.dart';
 import '../widgets/tr.dart';
+import '../widgets/social_links_card.dart';
 import '../widgets/youtube_card.dart';
 import 'account/account_data_screen.dart';
 import 'admin/admin_screen.dart';
@@ -187,6 +188,7 @@ class MoreScreen extends StatelessWidget {
               openYoutubeChannel,
               subtitle: tr(context, t('Free classes, tips and exam updates', 'फ्री क्लास, टिप्स और परीक्षा अपडेट')),
             ),
+            const SocialLinksCard(),
             tile(
               Icons.manage_accounts_outlined,
               tr(context, t('My data (export / delete)', 'मेरा डेटा (एक्सपोर्ट / हटाएं)')),

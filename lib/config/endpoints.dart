@@ -12,9 +12,9 @@ class Endpoints {
 
   /// Default Home feeds (standard WordPress REST API, no plugin needed).
   static const String examJobAlertPosts =
-      'https://examjobalert.com/wp-json/wp/v2/posts?per_page=6';
+      'https://examjobalert.com/wp-json/wp/v2/posts?per_page=15';
   static const String saralBookPosts =
-      'https://saralbook.com/wp-json/wp/v2/posts?per_page=6';
+      'https://saralbook.com/wp-json/wp/v2/posts?per_page=15';
 
   /// Remote configuration and feeds may only point to these domains
   /// (and their subdomains). This stops a hacked config from sending

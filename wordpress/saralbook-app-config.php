@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SaralBook App Config
  * Description: Controls the SaralBook mobile app (Home sections, announcements, maintenance, service on/off) from the WordPress dashboard. No app update needed.
- * Version: 1.3.1
+ * Version: 1.4.0
  * Author: SaralBook
  * License: GPLv2 or later
  *
@@ -55,6 +55,38 @@ function saralbook_app_allowed_url( $url ) {
 	return '';
 }
 
+/** Social pages shown in the app's More tab: id => label, allowed websites, example. */
+function saralbook_app_socials() {
+	return array(
+		'whatsapp'  => array( 'WhatsApp channel / group', array( 'whatsapp.com', 'wa.me' ), 'https://whatsapp.com/channel/...' ),
+		'telegram'  => array( 'Telegram channel', array( 't.me', 'telegram.me', 'telegram.org' ), 'https://t.me/yourchannel' ),
+		'facebook'  => array( 'Facebook page', array( 'facebook.com', 'fb.com', 'fb.me' ), 'https://www.facebook.com/yourpage' ),
+		'instagram' => array( 'Instagram', array( 'instagram.com' ), 'https://www.instagram.com/yourname' ),
+		'x'         => array( 'X (Twitter)', array( 'x.com', 'twitter.com' ), 'https://x.com/yourname' ),
+		'linkedin'  => array( 'LinkedIn', array( 'linkedin.com' ), 'https://www.linkedin.com/company/yourname' ),
+		'threads'   => array( 'Threads', array( 'threads.net', 'threads.com' ), 'https://www.threads.net/@yourname' ),
+	);
+}
+
+/** A https link that belongs to the named social website, else ''. */
+function saralbook_app_social_url( $id, $url ) {
+	$all = saralbook_app_socials();
+	if ( ! isset( $all[ $id ] ) ) {
+		return '';
+	}
+	$url = esc_url_raw( trim( (string) $url ), array( 'https' ) );
+	if ( '' === $url ) {
+		return '';
+	}
+	$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+	foreach ( $all[ $id ][1] as $domain ) {
+		if ( $host === $domain || substr( $host, -strlen( $domain ) - 1 ) === '.' . $domain ) {
+			return $url;
+		}
+	}
+	return '';
+}
+
 /* ---------- Settings page ---------- */
 
 add_action( 'admin_menu', function () {
@@ -83,6 +115,11 @@ function saralbook_app_sanitize( $in ) {
 			'message' => sanitize_text_field( $row['message'] ?? '' ),
 			'url'     => saralbook_app_allowed_url( $row['url'] ?? '' ),
 		);
+	}
+
+	$out['social'] = array();
+	foreach ( array_keys( saralbook_app_socials() ) as $id ) {
+		$out['social'][ $id ] = saralbook_app_social_url( $id, $in['social'][ $id ] ?? '' );
 	}
 
 	$out['services'] = array();
@@ -170,6 +207,15 @@ function saralbook_app_render_page() {
 			<?php endfor; ?>
 			</tbody></table>
 
+			<h2>Social media links (shown in the app's More tab)</h2>
+			<p>Paste the full https link of each page. Leave empty to hide it. Only the matching website is accepted (for example a Telegram box accepts only t.me links).</p>
+			<?php $so = $o['social'] ?? array(); ?>
+			<table class="form-table"><tbody>
+			<?php foreach ( saralbook_app_socials() as $id => $info ) : ?>
+				<tr><th><?php echo esc_html( $info[0] ); ?></th><td><input type="url" class="large-text" placeholder="<?php echo esc_attr( $info[2] ); ?>" name="<?php echo esc_attr( $name ); ?>[social][<?php echo esc_attr( $id ); ?>]" value="<?php echo esc_attr( $so[ $id ] ?? '' ); ?>"></td></tr>
+			<?php endforeach; ?>
+			</tbody></table>
+
 			<h2>Websites (turn one off if it is down)</h2>
 			<table class="widefat striped"><thead><tr><th>Website</th><th>Available</th><th>Message when unavailable (optional)</th></tr></thead><tbody>
 			<?php foreach ( $services as $id => $label ) :
@@ -218,7 +264,7 @@ function saralbook_app_render_page() {
 
 			<h2>Home sections (top to bottom, max 8)</h2>
 			<p><strong>Type "Latest posts"</strong> needs a Feed URL, for example<br>
-			<code>https://examjobalert.com/wp-json/wp/v2/posts?categories=12&amp;per_page=6</code><br>
+			<code>https://examjobalert.com/wp-json/wp/v2/posts?categories=12&amp;per_page=15</code><br>
 			To find a category number open <code>https://examjobalert.com/wp-json/wp/v2/categories?search=admit</code> in your browser and look for <code>"id"</code>.</p>
 			<table class="widefat striped"><thead><tr><th>On</th><th>Type</th><th>Title (English)</th><th>Title (Hindi)</th><th>Feed URL</th></tr></thead><tbody>
 			<?php for ( $i = 0; $i < 8; $i++ ) :
@@ -310,6 +356,14 @@ function saralbook_app_rest_config() {
 	);
 
 	$out['push'] = array( 'appId' => (string) ( $o['push']['appId'] ?? '' ) );
+
+	$out['social'] = new stdClass();
+	foreach ( array_keys( saralbook_app_socials() ) as $id ) {
+		$link = saralbook_app_social_url( $id, $o['social'][ $id ] ?? '' );
+		if ( '' !== $link ) {
+			$out['social']->$id = $link;
+		}
+	}
 
 	// Sections are only sent when you filled some in; otherwise the app uses its built-in Home.
 	$sections = array();

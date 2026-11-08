@@ -56,10 +56,11 @@ class HomeScreen extends StatelessWidget {
                         child: FadeSlideIn(
                           child: GradientBanner(
                             colors: const [Color(0xFF1E5AA8), Color(0xFF7048E8), Color(0xFFD6336C)],
+                            padding: const EdgeInsets.fromLTRB(16, 10, 6, 10),
                             child: Row(
                               children: [
-                                const BrandLogo(size: 48),
-                                const SizedBox(width: 14),
+                                const BrandLogo(size: 44),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,9 +72,15 @@ class HomeScreen extends StatelessWidget {
                                           color: Colors.white,
                                         ),
                                       ),
-                                      Text(
-                                        tr(context, t('Jobs, study and tools in one app', 'नौकरी, पढ़ाई और टूल्स एक ही ऐप में')),
-                                        style: const TextStyle(color: Colors.white70),
+                                      // Always one line: the text shrinks a little on narrow phones.
+                                      FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          tr(context, t('Jobs, study and tools in one app', 'नौकरी, पढ़ाई और टूल्स एक ही ऐप में')),
+                                          maxLines: 1,
+                                          style: const TextStyle(color: Colors.white70, fontSize: 14),
+                                        ),
                                       ),
                                     ],
                                   ),

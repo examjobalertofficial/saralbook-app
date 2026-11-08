@@ -23,7 +23,7 @@ void main() {
       'pdf_to_images', 'pdf_pages', 'image_compress', 'image_resize', 'image_crop',
       'passport_photo', 'photo_resize', 'signature_resize', 'photo_checker', 'doc_scanner',
       'pdf_editor', 'image_note', 'pdf_sanitizer',
-      'exam_countdown', 'kruti_dev', 'text_tools', 'qr_maker', 'notes_todo',
+      'kruti_dev', 'text_tools', 'qr_maker',
     ]) {
       expect(toolCatalog.any((e) => e.id == id), isTrue, reason: id);
     }

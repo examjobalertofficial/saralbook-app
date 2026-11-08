@@ -4,6 +4,7 @@ import '../../config/endpoints.dart';
 import '../../config/websites.dart';
 import '../security/safe_url.dart';
 import 'control.dart';
+import 'social_links.dart';
 
 class Maintenance {
   final bool enabled;
@@ -70,6 +71,9 @@ class AppRemoteConfig {
   /// OneSignal App ID for push notifications ('' = not set up yet). It is public.
   final String pushAppId;
 
+  /// Social media pages for the More tab.
+  final List<SocialLink> social;
+
   const AppRemoteConfig({
     required this.maintenance,
     required this.announcements,
@@ -79,6 +83,7 @@ class AppRemoteConfig {
     this.disabledTools = const {},
     this.update = UpdatePolicy.none,
     this.pushAppId = '',
+    this.social = const [],
   });
 
   bool flagOn(String id) => flags[id] ?? true;
@@ -103,6 +108,7 @@ class AppRemoteConfig {
         disabledTools: {...disabledTools, ...c.disabledTools},
         update: c.update.isSet ? c.update : update,
         pushAppId: pushAppId,
+        social: social,
       );
 
   static const Set<String> supportedSectionTypes = {'platforms', 'feed', 'recent', 'favorites', 'expense'};
@@ -270,6 +276,7 @@ class AppRemoteConfig {
       disabledTools: parseToolIds(json['disabledTools']),
       update: UpdatePolicy.fromMap(json['update']),
       pushAppId: _pushAppId(json['push']),
+      social: parseSocialLinks(json['social']),
     );
   }
 

@@ -103,6 +103,21 @@ void main() {
     expect(c.announcements[1].url, isNull);
   });
 
+  test('social links: only the matching website is accepted', () {
+    final c = AppRemoteConfig.tryParse(jsonEncode({
+      'social': {
+        'whatsapp': 'https://whatsapp.com/channel/abc',
+        'telegram': 'https://t.me/saralbook',
+        'facebook': 'https://evil.example/facebook.com',
+        'instagram': 'http://instagram.com/x',
+        'x': 'https://x.com/saralbook',
+        'unknown': 'https://t.me/x',
+      },
+    }))!;
+    expect(c.social.map((e) => e.id).toList(), ['whatsapp', 'telegram', 'x']);
+    expect(AppRemoteConfig.tryParse('{}')!.social, isEmpty);
+  });
+
   test('Hindi title is used only for Hindi', () {
     const s = HomeSection(id: 'x', type: 'feed', title: 'Jobs', titleHi: 'नौकरियां');
     expect(s.titleFor('en'), 'Jobs');
