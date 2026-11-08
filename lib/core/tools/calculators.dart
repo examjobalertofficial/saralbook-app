@@ -497,36 +497,6 @@ final _rankPercentile = CalcTool(
   },
 );
 
-final _studyTime = CalcTool(
-  id: 'study_time',
-  title: t('Study Time Planner', 'अध्ययन समय योजना'),
-  description: t('Total study hours until your exam', 'परीक्षा तक कुल अध्ययन घंटे'),
-  icon: Icons.timer_outlined,
-  category: ToolCategory.examCalc,
-  keywords: ['study', 'hours', 'countdown', 'exam date'],
-  fields: [
-    CalcField.date('exam', t('Exam date', 'परीक्षा की तारीख')),
-    CalcField.number('hours', t('Study hours per day', 'प्रतिदिन अध्ययन घंटे')),
-    CalcField.number('subjects', t('Number of subjects (optional)', 'विषयों की संख्या (वैकल्पिक)'), integer: true, optional: true),
-  ],
-  compute: (v) {
-    final days = daysBetween(DateTime.now(), v.date('exam')!);
-    if (days < 0) return _err('The exam date is in the past.', 'परीक्षा की तारीख बीत चुकी है।');
-    final h = v.number('hours')!;
-    if (h <= 0 || h > 24) return _err('Study hours must be between 0 and 24.', 'अध्ययन घंटे 0 से 24 के बीच होने चाहिए।');
-    final total = days * h;
-    final lines = <ResultLine>[
-      _r('Days left', 'बचे दिन', '$days', big: true),
-      _r('Total study hours', 'कुल अध्ययन घंटे', fmt(total, maxDecimals: 1), big: true),
-    ];
-    final s = v.integer('subjects');
-    if (s != null && s > 0) {
-      lines.add(_r('Hours per subject', 'प्रति विषय घंटे', fmt(total / s, maxDecimals: 1)));
-    }
-    return _ok(lines);
-  },
-);
-
 final _emi = CalcTool(
   id: 'emi',
   title: t('EMI Calculator', 'EMI कैलकुलेटर'),
@@ -822,7 +792,6 @@ final List<CalcTool> allCalcTools = [
   _cgpa,
   _examScore,
   _rankPercentile,
-  _studyTime,
   _emi,
   _gst,
   _unitConverter,

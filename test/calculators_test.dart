@@ -181,12 +181,4 @@ void main() {
     expect(result(DateTime(1989, 1, 2), cat: 'obc', extra: '2'), 'Eligible by age');
     expect(result(DateTime(1989, 1, 1), cat: 'obc', extra: '2'), 'Not eligible by age');
   });
-
-  test('study time counts days from today', () {
-    final exam = DateTime.now().add(const Duration(days: 10));
-    final out = _run('study_time', {'hours': '6', 'subjects': '4'}, dates: {'exam': exam});
-    expect(out[0], '10');
-    expect(out[1], '60');
-    expect(out[2], '15');
-  });
 }
