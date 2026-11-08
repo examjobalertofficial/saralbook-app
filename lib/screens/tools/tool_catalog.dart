@@ -5,6 +5,11 @@ import '../../core/tools/calc_model.dart';
 import '../../core/tools/calculators.dart';
 import 'calc_tool_screen.dart';
 import '../expense/currency_screens.dart';
+import 'extras/countdown_screen.dart';
+import 'extras/kruti_dev_screen.dart';
+import 'extras/notes_screen.dart';
+import 'extras/qr_screen.dart';
+import 'extras/text_tools_screen.dart';
 import 'files/image_screens.dart';
 import 'imagenote/image_note_screen.dart';
 import 'pdfedit/pdf_editor_screen.dart';
@@ -239,5 +244,50 @@ final List<ToolEntry> toolCatalog = [
     category: ToolCategory.student,
     keywords: const ['focus', 'study', 'break'],
     builder: (context) => const PomodoroScreen(),
+  ),
+  ToolEntry(
+    id: 'exam_countdown',
+    title: t('Exam Countdown', 'परीक्षा काउंटडाउन'),
+    description: t('Days left for your exams and form last dates', 'परीक्षा और फ़ॉर्म की अंतिम तिथि तक बचे दिन'),
+    icon: Icons.hourglass_bottom_rounded,
+    category: ToolCategory.examJob,
+    keywords: const ['exam', 'countdown', 'last date', 'deadline', 'days left', 'form', 'reminder'],
+    builder: (context) => const CountdownScreen(),
+  ),
+  ToolEntry(
+    id: 'kruti_dev',
+    title: t('Kruti Dev to Unicode', 'कृतिदेव से यूनिकोड'),
+    description: t('Convert Kruti Dev Hindi text to Unicode (beta)', 'कृतिदेव हिंदी टेक्स्ट को यूनिकोड में बदलें (बीटा)'),
+    icon: Icons.translate_rounded,
+    category: ToolCategory.examJob,
+    keywords: const ['kruti', 'krutidev', 'kruti dev', 'unicode', 'hindi', 'typing', 'mangal', 'font', 'convert'],
+    builder: (context) => const KrutiDevScreen(),
+  ),
+  ToolEntry(
+    id: 'text_tools',
+    title: t('Text Tools', 'टेक्स्ट टूल्स'),
+    description: t('Word counter, case changer and text clean-up', 'शब्द गिनती, केस बदलना और टेक्स्ट सुधार'),
+    icon: Icons.text_fields_rounded,
+    category: ToolCategory.student,
+    keywords: const ['word', 'count', 'character', 'counter', 'case', 'upper', 'lower', 'title', 'spaces', 'duplicate', 'sort'],
+    builder: (context) => const TextToolsScreen(),
+  ),
+  ToolEntry(
+    id: 'qr_maker',
+    title: t('QR Code Maker', 'QR कोड मेकर'),
+    description: t('QR for a link, UPI payment or WiFi', 'लिंक, UPI पेमेंट या WiFi के लिए QR'),
+    icon: Icons.qr_code_2_rounded,
+    category: ToolCategory.student,
+    keywords: const ['qr', 'code', 'upi', 'wifi', 'link', 'barcode', 'payment'],
+    builder: (context) => const QrScreen(),
+  ),
+  ToolEntry(
+    id: 'notes_todo',
+    title: t('Notes & To-do', 'नोट्स और टू-डू'),
+    description: t('Private notes and task list on your phone', 'आपके फ़ोन पर निजी नोट्स और काम की सूची'),
+    icon: Icons.checklist_rounded,
+    category: ToolCategory.student,
+    keywords: const ['notes', 'note', 'todo', 'to-do', 'task', 'list', 'checklist', 'memo'],
+    builder: (context) => const NotesScreen(),
   ),
 ];

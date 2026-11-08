@@ -33,6 +33,15 @@ class SectionHeader extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
           ),
+          // A soft line that fades out to the right.
+          Container(
+            width: 56,
+            height: 3,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(3),
+              gradient: LinearGradient(colors: [color.withAlpha(120), color.withAlpha(0)]),
+            ),
+          ),
         ],
       ),
     );

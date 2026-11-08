@@ -17,6 +17,13 @@ class PostList extends StatelessWidget {
   const PostList({super.key, required this.items, this.animate = true});
 
   static final LText _updated = t('Updated', 'अपडेट');
+  static final LText _new = t('NEW', 'नया');
+
+  /// Published within the last two days.
+  static bool _isFresh(FeedItem item) {
+    final d = item.date;
+    return d != null && DateTime.now().difference(d).inHours < 48;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +39,13 @@ class PostList extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 8),
               child: Material(
                 color: Color.alphaBlend(style.color.withAlpha(dark ? 36 : 22), scheme.surface),
-                borderRadius: BorderRadius.circular(18),
                 clipBehavior: Clip.antiAlias,
+                elevation: dark ? 0 : 1.5,
+                shadowColor: style.color.withAlpha(90),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  side: BorderSide(color: style.color.withAlpha(dark ? 70 : 48)),
+                ),
                 child: InkWell(
                   onTap: () => openFeedItem(context, item.title, item.link),
                   child: Padding(
@@ -70,6 +82,7 @@ class PostList extends StatelessWidget {
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   _Pill(tr(context, style.label), style.color),
+                                  if (_isFresh(item) && !item.isUpdated) _Pill(tr(context, _new), const Color(0xFF16A34A), filled: true),
                                   if (item.isUpdated) _Pill(tr(context, _updated), const Color(0xFFD6336C), filled: true),
                                   if (item.dateLabel.isNotEmpty)
                                     Text(item.dateLabel, style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),

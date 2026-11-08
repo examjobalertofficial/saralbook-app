@@ -1,7 +1,7 @@
 name: app
 description: SaralBook - all SaralBook platforms in one app.
 publish_to: 'none'
-version: 2.5.3+30
+version: 2.6.0+31
 
 environment:
   sdk: ^3.5.0
@@ -23,6 +23,7 @@ dependencies:
   google_sign_in: ^7.2.0
   pdf: ^3.13.0
   archive: ^4.0.9
+  qr: ^3.0.2
   webview_flutter: ^4.10.0
   webview_flutter_android: ^4.2.0
   connectivity_plus: ^6.1.0
