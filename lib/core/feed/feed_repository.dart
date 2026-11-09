@@ -119,6 +119,14 @@ List<FeedItem> parseFeed(String body) {
 ///  * fresh saved copy (< 2 min) is used without any network call
 ///  * if the network fails, a saved copy up to 24 h old is shown and marked
 ///  * anything older is never shown, so users do not see outdated news
+/// WordPress date for the "before" filter: one day after [now], to the second.
+String forceBeforeStamp(DateTime now) {
+  final t = now.add(const Duration(days: 1));
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${t.year.toString().padLeft(4, '0')}-${two(t.month)}-${two(t.day)}'
+      'T${two(t.hour)}:${two(t.minute)}:${two(t.second)}';
+}
+
 class FeedRepository {
   FeedRepository(
     this._cache, {
@@ -234,10 +242,14 @@ class FeedRepository {
       if (force) {
         // A manual refresh must see the newest posts even when a website cache
         // keeps an older answer for this exact address.
+        // The "before" date (tomorrow, so nothing is hidden) changes every second:
+        // it also skips a stuck query cache on the website's server.
         final u = Uri.parse(requestUrl);
+        final now = DateTime.now();
         requestUrl = u.replace(queryParameters: {
           ...u.queryParameters,
-          '_cb': DateTime.now().millisecondsSinceEpoch.toString(),
+          '_cb': now.millisecondsSinceEpoch.toString(),
+          if (!u.queryParameters.containsKey('before')) 'before': forceBeforeStamp(now),
         }).toString();
       }
       final response = await _client

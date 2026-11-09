@@ -148,4 +148,8 @@ void main() {
       throwsA(isA<FeedFailure>()),
     );
   });
+
+  test('forced refresh asks for a unique, harmless before-date', () {
+    expect(forceBeforeStamp(DateTime(2026, 11, 9, 9, 5, 7)), '2026-11-10T09:05:07');
+  });
 }
