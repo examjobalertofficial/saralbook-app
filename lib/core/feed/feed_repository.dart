@@ -116,7 +116,7 @@ List<FeedItem> parseFeed(String body) {
 }
 
 /// Downloads feeds with a safety net:
-///  * fresh saved copy (< 30 min) is used without any network call
+///  * fresh saved copy (< 2 min) is used without any network call
 ///  * if the network fails, a saved copy up to 24 h old is shown and marked
 ///  * anything older is never shown, so users do not see outdated news
 class FeedRepository {
@@ -127,7 +127,7 @@ class FeedRepository {
   })  : _client = client ?? http.Client(),
         _isOnline = isOnline ?? _defaultIsOnline;
 
-  static const Duration freshFor = Duration(minutes: 30);
+  static const Duration freshFor = Duration(minutes: 2);
   static const Duration staleLimit = Duration(hours: 24);
 
   final CacheStore _cache;
@@ -230,8 +230,18 @@ class FeedRepository {
     }
 
     try {
+      var requestUrl = normalizeUrl(url);
+      if (force) {
+        // A manual refresh must see the newest posts even when a website cache
+        // keeps an older answer for this exact address.
+        final u = Uri.parse(requestUrl);
+        requestUrl = u.replace(queryParameters: {
+          ...u.queryParameters,
+          '_cb': DateTime.now().millisecondsSinceEpoch.toString(),
+        }).toString();
+      }
       final response = await _client
-          .get(Uri.parse(normalizeUrl(url)))
+          .get(Uri.parse(requestUrl))
           .timeout(Endpoints.requestTimeout);
       if (response.statusCode != 200) {
         throw const FormatException('Bad status');

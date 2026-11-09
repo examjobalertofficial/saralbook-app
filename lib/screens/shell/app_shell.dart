@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/app_services.dart';
 import '../../core/l10n/app_strings.dart';
 
 /// Phones: bottom navigation bar. Tablets / wide screens: navigation rail.
@@ -8,12 +11,24 @@ class AppShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
   const AppShell({super.key, required this.navigationShell});
 
-  void _select(int index) {
+  static DateTime _lastHomeRefresh = DateTime.fromMillisecondsSinceEpoch(0);
+
+  void _select(BuildContext context, int index) {
+    final goingHome = index == 0 && navigationShell.currentIndex != 0;
     navigationShell.goBranch(
       index,
       // Tapping the current tab again returns to its first screen.
       initialLocation: index == navigationShell.currentIndex,
     );
+    // Back on Home from another tab: load the newest posts again
+    // (at most once every 20 seconds).
+    if (goingHome) {
+      final now = DateTime.now();
+      if (now.difference(_lastHomeRefresh) > const Duration(seconds: 20)) {
+        _lastHomeRefresh = now;
+        unawaited(AppScope.of(context).config.refresh(force: true));
+      }
+    }
   }
 
   @override
@@ -42,7 +57,7 @@ class AppShell extends StatelessWidget {
               body: navigationShell,
               bottomNavigationBar: NavigationBar(
                 selectedIndex: index,
-                onDestinationSelected: _select,
+                onDestinationSelected: (i) => _select(context, i),
                 destinations: [
                   for (final d in items)
                     NavigationDestination(
@@ -60,7 +75,7 @@ class AppShell extends StatelessWidget {
               children: [
                 NavigationRail(
                   selectedIndex: index,
-                  onDestinationSelected: _select,
+                  onDestinationSelected: (i) => _select(context, i),
                   extended: extended,
                   labelType:
                       extended ? null : NavigationRailLabelType.all,

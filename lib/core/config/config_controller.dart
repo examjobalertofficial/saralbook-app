@@ -135,12 +135,14 @@ class ConfigController extends ChangeNotifier {
   /// Fetches the latest configuration. Never throws: on any problem the
   /// current configuration stays in place.
   Future<void> refresh({bool force = false}) async {
-    if (_refreshing) return;
-    _refreshing = true;
+    // A pull-to-refresh always reloads the Home lists, even when a quiet
+    // configuration check is still running.
     if (force) {
       _refreshToken++;
       notifyListeners();
     }
+    if (_refreshing) return;
+    _refreshing = true;
     try {
       final response = await _client
           .get(Uri.parse(Endpoints.configUrl))

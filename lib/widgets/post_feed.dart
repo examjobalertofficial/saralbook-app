@@ -54,11 +54,35 @@ List<FeedItem> mergePosts(Iterable<List<FeedItem>> lists, {bool byEdit = true}) 
   return all;
 }
 
-class _PostFeedState extends State<PostFeed> {
+class _PostFeedState extends State<PostFeed> with WidgetsBindingObserver {
   FeedResult? _shown;
+  DateTime _lastLoad = DateTime.now();
   Object? _error;
   bool _started = false;
   int _run = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Coming back to the app after a while: fetch the newest posts again.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        _started &&
+        mounted &&
+        DateTime.now().difference(_lastLoad) > const Duration(minutes: 2)) {
+      _load(force: true);
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -107,6 +131,7 @@ class _PostFeedState extends State<PostFeed> {
         }(),
     ]);
     if (!mounted || run != _run) return;
+    _lastLoad = DateTime.now();
     setState(() {
       if (results.isEmpty) {
         _error = firstError ?? const FeedFailure(offline: false);
