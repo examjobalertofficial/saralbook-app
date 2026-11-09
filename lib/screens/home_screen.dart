@@ -110,12 +110,18 @@ class HomeScreen extends StatelessWidget {
                     ),
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                      sliver: SliverList.builder(
-                        itemCount: sections.length,
-                        itemBuilder: (context, i) => FadeSlideIn(
-                          key: ValueKey('in_${sections[i].id}'),
-                          index: i,
-                          child: _section(context, sections[i], config, lang),
+                      // All sections are built together (not lazily), so a pull-to-refresh
+                      // reaches every list, also the ones far below the screen.
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          children: [
+                            for (var i = 0; i < sections.length; i++)
+                              FadeSlideIn(
+                                key: ValueKey('in_${sections[i].id}'),
+                                index: i,
+                                child: _section(context, sections[i], config, lang),
+                              ),
+                          ],
                         ),
                       ),
                     ),
