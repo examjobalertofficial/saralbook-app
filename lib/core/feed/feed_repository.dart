@@ -119,12 +119,14 @@ List<FeedItem> parseFeed(String body) {
 ///  * fresh saved copy (< 2 min) is used without any network call
 ///  * if the network fails, a saved copy up to 24 h old is shown and marked
 ///  * anything older is never shown, so users do not see outdated news
-/// WordPress date for the "before" filter: one day after [now], to the second.
-String forceBeforeStamp(DateTime now) {
+/// WordPress date for the "before" filter: one day after [now], cut to the
+/// minute (or to the second when [exact]).
+String forceBeforeStamp(DateTime now, {bool exact = true}) {
   final t = now.add(const Duration(days: 1));
   String two(int n) => n.toString().padLeft(2, '0');
+  final sec = exact ? two(t.second) : '00';
   return '${t.year.toString().padLeft(4, '0')}-${two(t.month)}-${two(t.day)}'
-      'T${two(t.hour)}:${two(t.minute)}:${two(t.second)}';
+      'T${two(t.hour)}:${two(t.minute)}:$sec';
 }
 
 class FeedRepository {
@@ -163,6 +165,22 @@ class FeedRepository {
     final perPage = int.tryParse(q['per_page'] ?? '') ?? 6;
     q['per_page'] = perPage.clamp(1, 100).toString();
     return uri.replace(queryParameters: q).toString();
+  }
+
+  /// The address really sent to the website. For WordPress post lists a
+  /// harmless "before" date (tomorrow) is added: it changes every minute, so a
+  /// stuck query cache on the website's server can not keep an old list for
+  /// long. A manual refresh also adds a unique tag and uses the exact second.
+  static String _requestUrl(String url, {required bool force}) {
+    final base = normalizeUrl(url);
+    final u = Uri.parse(base);
+    if (!u.path.contains('/wp-json/wp/v2/posts')) return base;
+    final now = DateTime.now();
+    return u.replace(queryParameters: {
+      ...u.queryParameters,
+      if (force) '_cb': now.millisecondsSinceEpoch.toString(),
+      if (!u.queryParameters.containsKey('before')) 'before': forceBeforeStamp(now, exact: force),
+    }).toString();
   }
 
   /// A saved copy (up to 24 h old) available instantly, or null. Lets screens
@@ -238,20 +256,7 @@ class FeedRepository {
     }
 
     try {
-      var requestUrl = normalizeUrl(url);
-      if (force) {
-        // A manual refresh must see the newest posts even when a website cache
-        // keeps an older answer for this exact address.
-        // The "before" date (tomorrow, so nothing is hidden) changes every second:
-        // it also skips a stuck query cache on the website's server.
-        final u = Uri.parse(requestUrl);
-        final now = DateTime.now();
-        requestUrl = u.replace(queryParameters: {
-          ...u.queryParameters,
-          '_cb': now.millisecondsSinceEpoch.toString(),
-          if (!u.queryParameters.containsKey('before')) 'before': forceBeforeStamp(now),
-        }).toString();
-      }
+      final requestUrl = _requestUrl(url, force: force);
       final response = await _client
           .get(Uri.parse(requestUrl))
           .timeout(Endpoints.requestTimeout);
