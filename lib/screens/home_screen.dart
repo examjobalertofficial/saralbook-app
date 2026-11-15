@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:go_router/go_router.dart';
 
 import '../core/app_services.dart';
 import '../core/config/config_controller.dart';
@@ -8,12 +7,11 @@ import '../core/config/remote_config.dart';
 import '../core/l10n/app_strings.dart';
 import '../core/l10n/ltext.dart';
 import '../utils/navigation.dart';
-import '../core/jobs/job_tabs.dart';
-import '../core/router/app_router.dart';
 import '../widgets/animations.dart';
 import '../widgets/announcement_card.dart';
 import '../widgets/brand_logo.dart';
 import '../widgets/page_body.dart';
+import '../widgets/rating_trigger.dart';
 import '../widgets/tr.dart';
 import '../widgets/youtube_card.dart';
 import 'search_screen.dart';
@@ -23,6 +21,7 @@ import 'home/expense_section.dart';
 import 'home/favorites_section.dart';
 import 'home/feed_section.dart';
 import 'home/platforms_section.dart';
+import 'home/shortcuts_section.dart';
 import 'home/recent_section.dart';
 
 /// Home is driven by the configuration (remote or built-in): the list of
@@ -79,14 +78,23 @@ class HomeScreen extends StatelessWidget {
                                         child: Text(
                                           tr(context, t('Jobs, study and tools in one app', 'नौकरी, पढ़ाई और टूल्स एक ही ऐप में')),
                                           maxLines: 1,
-                                          style: const TextStyle(color: Colors.white70, fontSize: 14),
+                                          style: const TextStyle(color: Colors.white70, fontSize: 13),
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
                                 IconButton(
+                                  tooltip: tr(context, t('Search', 'खोजें')),
+                                  visualDensity: VisualDensity.compact,
+                                  icon: const Icon(Icons.search_rounded, color: Colors.white),
+                                  onPressed: () => Navigator.of(context, rootNavigator: true).push(
+                                    MaterialPageRoute<void>(builder: (_) => const SearchScreen()),
+                                  ),
+                                ),
+                                IconButton(
                                   tooltip: s.customizeHome,
+                                  visualDensity: VisualDensity.compact,
                                   icon: const Icon(Icons.tune_rounded, color: Colors.white),
                                   onPressed: () => Navigator.of(context, rootNavigator: true).push(
                                     MaterialPageRoute<void>(
@@ -100,8 +108,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SliverToBoxAdapter(child: _SearchBar()),
-                    const SliverToBoxAdapter(child: _QuickTabs()),
+                    SliverToBoxAdapter(child: ShortcutsSection(hidden: config.hiddenShortcuts)),
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
                       sliver: SliverToBoxAdapter(
@@ -129,6 +136,7 @@ class HomeScreen extends StatelessWidget {
                       padding: EdgeInsets.fromLTRB(16, 0, 16, 28),
                       sliver: SliverToBoxAdapter(child: YoutubeCard()),
                     ),
+                    const SliverToBoxAdapter(child: RatingTrigger()),
                   ],
                 ),
               );
@@ -154,101 +162,6 @@ class HomeScreen extends StatelessWidget {
       default:
         return const SizedBox.shrink();
     }
-  }
-}
-
-/// A search box under the banner. Tapping it opens the full search screen.
-class _SearchBar extends StatelessWidget {
-  const _SearchBar();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
-      child: Material(
-        color: scheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(28),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => Navigator.of(context, rootNavigator: true).push(
-            MaterialPageRoute<void>(builder: (_) => const SearchScreen()),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-            child: Row(
-              children: [
-                Icon(Icons.search_rounded, color: scheme.onSurfaceVariant),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    tr(context, t('Search jobs, results, tools…', 'नौकरी, रिज़ल्ट, टूल खोजें…')),
-                    style: TextStyle(color: scheme.onSurfaceVariant),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Five coloured shortcuts that open the Jobs tab on the matching filter.
-class _QuickTabs extends StatelessWidget {
-  const _QuickTabs();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 96,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-        itemCount: jobTabs.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, i) {
-          final tab = jobTabs[i];
-          return FadeSlideIn(
-            index: i,
-            child: PressScale(
-              onTap: () => context.go('${AppRoutes.jobs}?tab=${tab.id}'),
-              child: SizedBox(
-                width: 74,
-                child: Column(
-                  children: [
-                    Container(
-                      width: 54,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        gradient: LinearGradient(
-                          colors: [tab.color, Color.alphaBlend(Colors.black.withAlpha(60), tab.color)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [BoxShadow(color: tab.color.withAlpha(80), blurRadius: 8, offset: const Offset(0, 3))],
-                      ),
-                      child: Icon(tab.icon, color: Colors.white),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      tr(context, tab.title),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
   }
 }
 

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:app/core/tools/files/pdf_ops.dart';
 import 'package:app/core/tools/kruti_dev.dart';
 import 'package:app/core/tools/qr_payload.dart';
 import 'package:app/core/tools/text_stats.dart';
@@ -50,5 +51,15 @@ void main() {
       expect(isValidUpiId('abc@okbank'), isTrue);
       expect(isValidUpiId('abc'), isFalse);
     });
+  });
+
+  test('compress to a size: start step depends on how much smaller is wanted', () {
+    expect(compressLadderStart(1000, 900), 0);
+    expect(compressLadderStart(1000, 700), 1);
+    expect(compressLadderStart(1000, 500), 2);
+    expect(compressLadderStart(1000, 300), 3);
+    expect(compressLadderStart(1000, 100), 4);
+    expect(compressLadderStart(0, 100), 0);
+    expect(kCompressLadder.length, greaterThan(compressLadderStart(1000, 1)));
   });
 }

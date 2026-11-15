@@ -118,6 +118,15 @@ void main() {
     expect(AppRemoteConfig.tryParse('{}')!.social, isEmpty);
   });
 
+  test('home shortcut buttons: unknown ids ignored, nothing hidden by default', () {
+    final c = AppRemoteConfig.tryParse(jsonEncode({
+      'shortcuts': {'hidden': ['syllabus', 'images_to_pdf', 'nonsense', 5]},
+    }))!;
+    expect(c.hiddenShortcuts, {'syllabus', 'images_to_pdf'});
+    expect(AppRemoteConfig.tryParse('{}')!.hiddenShortcuts, isEmpty);
+    expect(AppRemoteConfig.tryParse(jsonEncode({'shortcuts': 'x'}))!.hiddenShortcuts, isEmpty);
+  });
+
   test('Hindi title is used only for Hindi', () {
     const s = HomeSection(id: 'x', type: 'feed', title: 'Jobs', titleHi: 'नौकरियां');
     expect(s.titleFor('en'), 'Jobs');

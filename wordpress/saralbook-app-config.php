@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SaralBook App Config
  * Description: Controls the SaralBook mobile app (Home sections, announcements, maintenance, service on/off) from the WordPress dashboard. No app update needed.
- * Version: 1.4.0
+ * Version: 1.5.0
  * Author: SaralBook
  * License: GPLv2 or later
  *
@@ -53,6 +53,24 @@ function saralbook_app_allowed_url( $url ) {
 		}
 	}
 	return '';
+}
+
+/** The shortcut buttons under the app's Home header: id => label. Order = order in the app. */
+function saralbook_app_shortcuts() {
+	return array(
+		'latest'        => 'Latest Jobs',
+		'admit_card'    => 'Admit Card',
+		'answer_key'    => 'Answer Key',
+		'result'        => 'Result',
+		'admission'     => 'Admission',
+		'syllabus'      => 'Syllabus',
+		'group_expense' => 'Group Expense',
+		'resume_maker'  => 'Resume Maker',
+		'doc_scanner'   => 'Document Scanner',
+		'photo_resize'  => 'Photo Resize (for forms)',
+		'pdf_compress'  => 'Compress PDF',
+		'images_to_pdf' => 'Image to PDF',
+	);
 }
 
 /** Social pages shown in the app's More tab: id => label, allowed websites, example. */
@@ -120,6 +138,15 @@ function saralbook_app_sanitize( $in ) {
 	$out['social'] = array();
 	foreach ( array_keys( saralbook_app_socials() ) as $id ) {
 		$out['social'][ $id ] = saralbook_app_social_url( $id, $in['social'][ $id ] ?? '' );
+	}
+
+	// Ticked = shown. Unticked buttons are saved as hidden.
+	$shown = isset( $in['shortcuts_show'] ) && is_array( $in['shortcuts_show'] ) ? $in['shortcuts_show'] : array();
+	$out['shortcuts_hidden'] = array();
+	foreach ( array_keys( saralbook_app_shortcuts() ) as $id ) {
+		if ( empty( $shown[ $id ] ) ) {
+			$out['shortcuts_hidden'][] = $id;
+		}
 	}
 
 	$out['services'] = array();
@@ -206,6 +233,15 @@ function saralbook_app_render_page() {
 				</tr>
 			<?php endfor; ?>
 			</tbody></table>
+
+			<h2>Home shortcut buttons</h2>
+			<p>Tick the buttons you want under the app's Home header. Unticked buttons disappear and the rest move up (four in a row).</p>
+			<?php $hid = (array) ( $o['shortcuts_hidden'] ?? array() ); ?>
+			<table class="form-table"><tbody><tr><td>
+			<?php foreach ( saralbook_app_shortcuts() as $id => $label ) : ?>
+				<label style="display:inline-block;min-width:230px;margin:4px 0"><input type="checkbox" name="<?php echo esc_attr( $name ); ?>[shortcuts_show][<?php echo esc_attr( $id ); ?>]" value="1" <?php checked( ! in_array( $id, $hid, true ) ); ?>> <?php echo esc_html( $label ); ?></label>
+			<?php endforeach; ?>
+			</td></tr></tbody></table>
 
 			<h2>Social media links (shown in the app's More tab)</h2>
 			<p>Paste the full https link of each page. Leave empty to hide it. Only the matching website is accepted (for example a Telegram box accepts only t.me links).</p>
@@ -356,6 +392,14 @@ function saralbook_app_rest_config() {
 	);
 
 	$out['push'] = array( 'appId' => (string) ( $o['push']['appId'] ?? '' ) );
+
+	$hidden_shortcuts = array();
+	foreach ( (array) ( $o['shortcuts_hidden'] ?? array() ) as $hid ) {
+		if ( is_string( $hid ) && isset( saralbook_app_shortcuts()[ $hid ] ) ) {
+			$hidden_shortcuts[] = $hid;
+		}
+	}
+	$out['shortcuts'] = array( 'hidden' => $hidden_shortcuts );
 
 	$out['social'] = new stdClass();
 	foreach ( array_keys( saralbook_app_socials() ) as $id ) {

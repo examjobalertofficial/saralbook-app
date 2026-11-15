@@ -344,9 +344,21 @@ class PdfCompressScreen extends StatefulWidget {
 
 class _PdfCompressScreenState extends State<PdfCompressScreen> with ToolRunner {
   PickedFile? _file;
-  int _level = 1; // 0 light, 1 balanced, 2 strong
+  int _level = 1; // 0 light, 1 balanced, 2 strong, 3 wanted size in KB
   static const _dpi = [130, 100, 72];
   static const _quality = [75, 60, 45];
+  final TextEditingController _kb = TextEditingController(text: '200');
+  final LText _errSize = t('Please enter a valid size.', 'कृपया सही आकार दर्ज करें।');
+  final LText _notReached = t(
+    'This is the smallest this file can get without making it unreadable.',
+    'इस फ़ाइल को इससे छोटा करने पर वह पढ़ने लायक नहीं रहेगी।',
+  );
+
+  @override
+  void dispose() {
+    _kb.dispose();
+    super.dispose();
+  }
 
   Future<void> _pick() async {
     final f = await pickFiles(extensions: pdfExtensions);
@@ -357,26 +369,44 @@ class _PdfCompressScreenState extends State<PdfCompressScreen> with ToolRunner {
     });
   }
 
-  Future<void> _compress() => runJob(() async {
-        final file = _file!;
-        final bytes = await compressPdf(
-          file.path,
-          dpi: _dpi[_level],
-          quality: _quality[_level],
-          onProgress: reportProgress,
-        );
-        final out = await writeOutput('${baseName(file.name)}_compressed.pdf', bytes);
-        final saved = file.size == 0 ? 0 : ((1 - out.size / file.size) * 100).round();
-        return JobResult(
-          [out],
-          info: [
-            (Tx.before, formatBytes(file.size)),
-            (Tx.after, formatBytes(out.size)),
-            (Tx.saving, '$saved%'),
-          ],
-          warnings: out.size >= file.size ? [Tx.notSmaller] : const [],
-        );
-      });
+  Future<void> _compress() async {
+    final kb = parseInt(_kb);
+    if (_level == 3 && (kb == null || kb < 1)) {
+      setState(() => errorText = _errSize);
+      return;
+    }
+    await runJob(() async {
+      final file = _file!;
+      final targetBytes = (kb ?? 0) * 1024;
+      final bytes = _level == 3
+          ? await compressPdfToTarget(
+              file.path,
+              originalBytes: file.size,
+              targetBytes: targetBytes,
+              onProgress: reportProgress,
+            )
+          : await compressPdf(
+              file.path,
+              dpi: _dpi[_level],
+              quality: _quality[_level],
+              onProgress: reportProgress,
+            );
+      final out = await writeOutput('${baseName(file.name)}_compressed.pdf', bytes);
+      final saved = file.size == 0 ? 0 : ((1 - out.size / file.size) * 100).round();
+      return JobResult(
+        [out],
+        info: [
+          (Tx.before, formatBytes(file.size)),
+          (Tx.after, formatBytes(out.size)),
+          (Tx.saving, '$saved%'),
+        ],
+        warnings: [
+          if (out.size >= file.size) Tx.notSmaller,
+          if (_level == 3 && out.size > targetBytes) _notReached,
+        ],
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -395,12 +425,15 @@ class _PdfCompressScreenState extends State<PdfCompressScreen> with ToolRunner {
               (0, t('Light (best quality)', 'हल्का (बेहतर क्वालिटी)')),
               (1, t('Balanced', 'संतुलित')),
               (2, t('Strong (smallest)', 'तेज़ (सबसे छोटा)')),
+              (3, t('Exact size (KB)', 'तय आकार (KB)')),
             ],
             onChanged: (v) => setState(() {
               _level = v;
               clearResult();
             }),
           ),
+          if (_level == 3)
+            NumField(controller: _kb, label: t('Wanted size (up to)', 'चाहिए आकार (अधिकतम)'), suffix: 'KB'),
           NoteBox(
             icon: Icons.info_outline_rounded,
             text: tx(

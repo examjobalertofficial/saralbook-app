@@ -62,6 +62,9 @@ class ConfigController extends ChangeNotifier {
   /// OneSignal App ID from the website settings ('' = push not set up).
   String get pushAppId => _config.pushAppId;
 
+  /// Home shortcut buttons the website switched off.
+  Set<String> get hiddenShortcuts => _config.hiddenShortcuts;
+
   /// The saved owner switches (shown in the Admin panel).
   AppControl get control => _override;
 

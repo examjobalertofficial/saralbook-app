@@ -147,6 +147,60 @@ Future<Uint8List> compressPdf(String path,
   }
 }
 
+/// Strength steps for "compress to a size": picture resolution (dpi) and JPEG quality,
+/// from gentle to very strong.
+const List<(int, int)> kCompressLadder = [
+  (130, 75),
+  (100, 60),
+  (85, 50),
+  (72, 45),
+  (60, 38),
+  (50, 30),
+  (40, 25),
+];
+
+/// Where to start on [kCompressLadder]: a small wanted reduction starts gentle,
+/// a big one starts strong, so fewer tries are needed.
+int compressLadderStart(int originalBytes, int targetBytes) {
+  if (originalBytes <= 0 || targetBytes <= 0) return 0;
+  final ratio = targetBytes / originalBytes;
+  if (ratio >= 0.85) return 0;
+  if (ratio >= 0.6) return 1;
+  if (ratio >= 0.4) return 2;
+  if (ratio >= 0.25) return 3;
+  return 4;
+}
+
+/// Compresses a PDF to fit [targetBytes], using the gentlest strength that fits.
+/// When even the strongest step is too big, the smallest result is returned.
+Future<Uint8List> compressPdfToTarget(
+  String path, {
+  required int originalBytes,
+  required int targetBytes,
+  Progress? onProgress,
+}) async {
+  var idx = compressLadderStart(originalBytes, targetBytes);
+  var best = await compressPdf(path,
+      dpi: kCompressLadder[idx].$1, quality: kCompressLadder[idx].$2, onProgress: onProgress);
+  if (best.length <= targetBytes) {
+    if (idx > 0) {
+      // Fits: try one gentler step to keep the best quality that still fits.
+      final milder = await compressPdf(path,
+          dpi: kCompressLadder[idx - 1].$1, quality: kCompressLadder[idx - 1].$2, onProgress: onProgress);
+      if (milder.length <= targetBytes) best = milder;
+    }
+    return best;
+  }
+  while (idx < kCompressLadder.length - 1) {
+    idx++;
+    final r = await compressPdf(path,
+        dpi: kCompressLadder[idx].$1, quality: kCompressLadder[idx].$2, onProgress: onProgress);
+    if (r.length < best.length) best = r;
+    if (r.length <= targetBytes) return r;
+  }
+  return best;
+}
+
 /// Each selected page as a JPG/PNG picture.
 Future<List<Uint8List>> pdfToImages(
   String path,

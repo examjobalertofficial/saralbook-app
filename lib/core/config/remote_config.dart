@@ -4,6 +4,7 @@ import '../../config/endpoints.dart';
 import '../../config/websites.dart';
 import '../security/safe_url.dart';
 import 'control.dart';
+import 'shortcuts.dart';
 import 'social_links.dart';
 
 class Maintenance {
@@ -74,6 +75,9 @@ class AppRemoteConfig {
   /// Social media pages for the More tab.
   final List<SocialLink> social;
 
+  /// Home shortcut buttons the website switched off.
+  final Set<String> hiddenShortcuts;
+
   const AppRemoteConfig({
     required this.maintenance,
     required this.announcements,
@@ -84,6 +88,7 @@ class AppRemoteConfig {
     this.update = UpdatePolicy.none,
     this.pushAppId = '',
     this.social = const [],
+    this.hiddenShortcuts = const {},
   });
 
   bool flagOn(String id) => flags[id] ?? true;
@@ -109,6 +114,7 @@ class AppRemoteConfig {
         update: c.update.isSet ? c.update : update,
         pushAppId: pushAppId,
         social: social,
+        hiddenShortcuts: hiddenShortcuts,
       );
 
   static const Set<String> supportedSectionTypes = {'platforms', 'feed', 'recent', 'favorites', 'expense'};
@@ -277,6 +283,7 @@ class AppRemoteConfig {
       update: UpdatePolicy.fromMap(json['update']),
       pushAppId: _pushAppId(json['push']),
       social: parseSocialLinks(json['social']),
+      hiddenShortcuts: parseHiddenShortcuts(json['shortcuts']),
     );
   }
 
