@@ -96,3 +96,50 @@ for name in ("android/app/build.gradle.kts", "android/app/build.gradle"):
     f = pathlib.Path(name)
     if f.exists():
         print(name, "->", re.findall(r'applicationId\s*=?\s*"([^"]+)"', f.read_text()))
+
+
+# Android lint crashes inside plugin code on the cloud build (a bug in the lint
+# tool, "List.removeLast"). Lint is only a code-quality check, so it is switched
+# off for release builds. Done two ways so at least one always applies.
+_lint_off = """
+allprojects {
+    tasks.configureEach {
+        if (name.startsWith("lintVital") || name.startsWith("lintAnalyze") || name.startsWith("lintReport")) {
+            enabled = false
+        }
+    }
+}
+"""
+_root = pathlib.Path("android/build.gradle.kts")
+if _root.exists() and "lintVital" not in _root.read_text():
+    _root.write_text(_root.read_text() + "\n" + _lint_off)
+    print("Lint disabled in android/build.gradle.kts")
+
+_init = pathlib.Path.home() / ".gradle" / "init.d"
+_init.mkdir(parents=True, exist_ok=True)
+(_init / "no-lint.gradle").write_text(
+    _lint_off.replace("name.startsWith", "name.startsWith").replace(
+        "enabled = false", "enabled = false"
+    )
+)
+print("Lint disabled via Gradle init script")
+
+
+# The Android lint tool in CI crashes inside plugin code (firebase_core,
+# "List.removeLast" Java mismatch) and fails the release build. Lint is only a
+# quality report, so switch the release-time lint tasks off for every module.
+import os
+
+init_dir = pathlib.Path(os.path.expanduser("~/.gradle/init.d"))
+init_dir.mkdir(parents=True, exist_ok=True)
+(init_dir / "no-lint.gradle").write_text(
+    """allprojects {
+  tasks.configureEach { t ->
+    if (t.name.startsWith("lintVital") || t.name.startsWith("lintAnalyze") || t.name.startsWith("lintReport")) {
+      t.enabled = false
+    }
+  }
+}
+"""
+)
+print("Android lint tasks disabled via", init_dir / "no-lint.gradle")
